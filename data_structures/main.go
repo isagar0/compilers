@@ -88,8 +88,63 @@ func QueueTests() {
 	queue.Print() // Esperado: "5 15 25"
 }
 
+func DictionaryTests() {
+	// Test Case 1: Put
+	dict := NewDictionary()
+	dict.Put("a", 10)
+	dict.Put("b", 20)
+	dict.Put("c", 30)
+	fmt.Println("Test Case 1:", dict.items) // Esperado: map[a:10 b:20 c:30]
+
+	// Test Case 2: Get
+	value, exists := dict.Get("b")
+	fmt.Println("Test Case 2:", value, exists) // Esperado: 20 true
+
+	// Test Case 3: Get
+	value, exists = dict.Get("z")
+	fmt.Println("Test Case 3:", value, exists) // Esperado: 0 false
+
+	// Test Case 4: Remove
+	dict.Remove("b")
+	fmt.Println("Test Case 4:", dict.items) // Esperado: map[a:10 c:30]
+
+	// Test Case 5: Remove
+	dict.Remove("z")
+	fmt.Println("Test Case 5:", dict.items) // Esperado: Sin cambios
+
+	// Test Case 6: Keys
+	fmt.Println("Test Case 6:", dict.Keys()) // Esperado: [a c]
+
+	// Test Case 7: Size
+	size := dict.Size()
+	fmt.Println("Test Case 7:", size) // Esperado: 2
+
+	// Test Case 8: IsEmpty
+	isEmpty := dict.IsEmpty()
+	fmt.Println("Test Case 8:", isEmpty) // Esperado: false
+
+	// Test Case 9: IsEmpty
+	dict.Remove("a")
+	dict.Remove("c")
+	fmt.Println("Test Case 9:", dict.IsEmpty()) // Esperado: true
+
+	// Test Case 10: Put
+	dict.Put("x", 50)
+	dict.Put("x", 100)
+	fmt.Println("Test Case 10:", dict.items["x"]) // Esperado: 100
+
+	// Test Case 11: PrintedOrdered
+	dict.Put("y", 200)
+	dict.Put("x", 300)
+	dict.Put("m", 400)
+	dict.Put("n", 500)
+	fmt.Println("Test Case 12:")
+	dict.PrintOrdered() // Esperado: x: 300 y:200 m: 400 n: 500 en orden de inserción
+}
+
 func main() {
-	StackTests()
-	fmt.Println()
-	QueueTests()
+	//StackTests()
+	//fmt.Println()
+	//QueueTests()
+	DictionaryTests()
 }
