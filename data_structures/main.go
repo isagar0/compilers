@@ -12,7 +12,11 @@ func StackTests() {
 
 	// Test case 2: Pop
 	item, err := stack.Pop()
-	fmt.Println("Test Case 2:", stack.items, err) // Esperado: [10 20]
+	if err != nil {
+		fmt.Println("Test Case 2 Error:", err)
+	} else {
+		fmt.Println("Test Case 2:", stack.items, "Elemento eliminado: ", item) // Esperado: [10 20] Elemento eliminado: 30
+	}
 
 	// Test case 3: Peek
 	item, err = stack.Peek()
@@ -52,7 +56,11 @@ func QueueTests() {
 
 	// Test Case 2: Dequeue
 	item, err := queue.Dequeue()
-	fmt.Println("Test Case 2:", queue.items, err) // Esperado: [20 30]
+	if err != nil {
+		fmt.Println("Test Case 2 Error:", err)
+	} else {
+		fmt.Println("Test Case 2:", queue.items, "Elemento eliminado: ", item) // Esperado: [20 30] Elemento eliminado:  10
+	}
 
 	// Test Case 3: Peek
 	item, err = queue.Peek()
@@ -143,8 +151,9 @@ func DictionaryTests() {
 }
 
 func main() {
-	//StackTests()
-	//fmt.Println()
-	//QueueTests()
+	StackTests()
+	fmt.Println()
+	QueueTests()
+	fmt.Println()
 	DictionaryTests()
 }
