@@ -20,14 +20,14 @@ var testDataAccept = []*TI{
             print(x);
          }
          end`,
-	}, // 1. Aceptado
+	}, // Accept 1
 	{
 		`program testProgram;
          main {
-            print(\"Hello, world!\");
+            print("Hello, world!");
          }
          end`,
-	}, // 2. Aceptado
+	}, // Accept 2
 	{
 		`program simple;
          var a: float;
@@ -41,10 +41,10 @@ var testDataAccept = []*TI{
             }
          }
          end`,
-	}, // 3. Aceptado
+	}, // Accept 3
 	{
 		`program withFunc;
-         void sum(int a, int b)[
+         void sum(a: int, b: int)[
             var result: int;
             {
                 result = a + b;
@@ -55,7 +55,7 @@ var testDataAccept = []*TI{
             sum(2,3);
          }
          end`,
-	}, // 4. Aceptado
+	}, // Accept 4
 	{
 		`program funcOnly;
          void greet()[
@@ -67,7 +67,7 @@ var testDataAccept = []*TI{
             greet();
          }
          end`,
-	}, // 5. Aceptado
+	}, // Accept 5
 	{
 		`program withCycle;
          var i: int;
@@ -76,13 +76,13 @@ var testDataAccept = []*TI{
             while (i < 10) do {
                print(i);
                i = i + 1;
-            }
+            };
          }
          end`,
-	}, // 6. Aceptado
+	}, // Accept 6
 	{
 		`program multiVars;
-         var a: int, b: float, c: int;
+         var a, b: int;
          main {
             a = 1;
             b = 2.5;
@@ -92,15 +92,7 @@ var testDataAccept = []*TI{
             print(c);
          }
          end`,
-	}, // 7. Aceptado
-	{
-		`program missingMain;
-         var x: int;
-         {
-            x = 5;
-         }
-         end`,
-	},
+	}, // Accept 7
 }
 
 var testDataFail = []*TI{
@@ -111,14 +103,22 @@ var testDataFail = []*TI{
             x = 5;
          }
          end`,
-	}, // 8. Falla
+	}, // Fail 1
+	{
+		`program missingMain;
+         var x: int;
+         {
+            x = 5;
+         }
+         end`,
+	}, // Fail 2
 	{
 		`program noEnd;
          var x: int;
          main {
             x = 1;
          }`,
-	}, // 9. Falla
+	}, // Fail 3
 	{
 		`program missingSemicolon;
          var a: int;
@@ -127,7 +127,7 @@ var testDataFail = []*TI{
             print(a);
          }
          end`,
-	}, // 10. Falla
+	}, // Fail 4
 	{
 		`program badFunc;
          void add(int a, int b){
@@ -141,7 +141,7 @@ var testDataFail = []*TI{
             add(1,2);
          }
          end`,
-	}, // 11. Falla
+	}, // Fail 5
 	{
 		`program badWhile;
          var i: int;
@@ -152,37 +152,29 @@ var testDataFail = []*TI{
             }
          }
          end`,
-	}, // 12. Falla
+	}, // Fail 6
 }
 
 func TestParserAccept(t *testing.T) {
 	p := parser.NewParser()
-	pass := true
-	for _, ts := range testDataAccept {
+	for i, ts := range testDataAccept {
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
 		if err != nil {
-			pass = false
-			t.Logf("Error parsing source (start: %.50s...):\nError: %s", ts.src, err.Error())
+			t.Errorf("Test %d (ACCEPT) failed: unexpected parse error.\nSource start: %.50s...\nError: %s", i+1, ts.src, err.Error())
 		}
-	}
-	if !pass {
-		t.Fail()
 	}
 }
 
 func TestParserFail(t *testing.T) {
 	p := parser.NewParser()
-	pass := true
-	for _, ts := range testDataFail {
+	for i, ts := range testDataFail {
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
-		if err != nil {
-			pass = false
-			t.Logf("Error parsing source (start: %.50s...):\nError: %s", ts.src, err.Error())
+		if err == nil {
+			t.Errorf("Test %d (FAIL) did not produce expected error.\nSource start: %.50s...", i+1, ts.src)
+		} else {
+			t.Logf("Test %d (FAIL): Expected fail. Error: %s", i+1, err.Error())
 		}
-	}
-	if !pass {
-		t.Fail()
 	}
 }

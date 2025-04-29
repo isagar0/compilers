@@ -21,8 +21,10 @@ _digit       : '0'-'9' ;
 id           : (_lowcase | _upcase) { (_lowcase | _upcase | _digit | '_') } ;
 
 /* Constantes */
-
-_chars       : '\u0000'-'\u0009' | '\u000B'-'\u000C' | '\u000E'-'\uFFFF' ; // Todos menos "" y \n 
+_special : ' ' | '!' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' |
+           ':' | ';' | '<' | '=' | '>' | '?' | '@' |
+           '[' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~' ;
+_chars       : _lowcase | _upcase | _special ;
 cte_int      : _digit { _digit } ;
 cte_float    : _digit { _digit } '.' _digit { _digit } ;
 cte_string   : '"' {_chars} '"' ;
