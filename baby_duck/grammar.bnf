@@ -1,0 +1,223 @@
+/*-------------------------- Scanner(Lexical) -------------------------- */
+
+/* Palabras Clave */
+program      : 'p''r''o''g''r''a''m' ;
+main         : 'm''a''i''n' ;
+end          : 'e''n''d' ;
+var          : 'v''a''r' ;
+int          : 'i''n''t' ;
+float        : 'f''l''o''a''t' ;
+print        : 'p''r''i''n''t' ;
+while        : 'w''h''i''l''e' ;
+do           : 'd''o' ;
+if           : 'i''f' ;
+else         : 'e''l''s''e' ;
+void         : 'v''o''i''d' ;
+
+/* ID */
+_lowcase     : 'a'-'z' ;
+_upcase      : 'A'-'Z' ;
+_digit       : '0'-'9' ;
+id           : (_lowcase | _upcase) { (_lowcase | _upcase | _digit | '_') } ;
+
+/* Constantes */
+
+_chars       : '\u0000'-'\u0009' | '\u000B'-'\u000C' | '\u000E'-'\uFFFF' ; // Todos menos "" y \n 
+cte_int      : _digit { _digit } ;
+cte_float    : _digit { _digit } '.' _digit { _digit } ;
+cte_string   : '"' {_chars} '"' ;
+
+/* Operadores */
+assign       : '=' ;
+not_equal    : '!''=' ;
+less_than    : '>' ;
+more_than    : '<' ;
+add          : '+' ;
+rest         : '-' ;
+multiply     : '*' ;
+divide       : '/' ;
+
+/* Simbolos especiales */
+semicolon    : ';' ;
+colon        : ':' ;
+comma        : ',' ;
+l_round_par  : '(' ;
+r_round_par  : ')' ;
+l_curly_par  : '{' ;
+r_curly_par  : '}' ;
+l_square_par : '[' ;
+r_square_par : ']' ;
+
+/* Ignorar */
+!whitespace  : ' ' | '\t' | '\n' | '\r' ;
+
+/* -------------------------- Parser (Syntax) -------------------------- */
+/* PROGRAM */
+Program
+    : program id semicolon Vars FunctionList main Body end
+    ;
+
+FunctionList
+    : Function FunctionList
+    | "empty"
+    ;
+
+/* VARS */
+Vars
+    : var IdList colon Type semicolon
+    | "empty"
+    ;
+
+IdList
+    : id IdListTail
+    ;
+
+IdListTail
+    : comma id IdListTail
+    | "empty"
+    ;
+
+/* TYPE */
+Type
+    : int
+    | float
+    ;
+
+/* FUNCS */
+Function
+    : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon
+    ;
+
+Params
+    : ParamList
+    | "empty"
+    ;
+
+ParamList
+    : id colon Type ParamListTail
+    ;
+
+ParamListTail
+    : comma id colon Type ParamListTail
+    | "empty"
+    ;
+
+/* BODY */
+Body
+    : l_curly_par StatementList r_curly_par
+    ;
+
+StatementList
+    : Statement StatementList
+    | "empty"
+    ;
+
+/* STATEMENT */
+Statement
+    : Assign
+    | Condition
+    | Cycle
+    | FCall
+    | Print
+    ;
+
+/* ASSIGN */
+Assign
+    : id assign Expression semicolon
+    ;
+
+/* CONDITION */
+Condition
+    : if l_round_par Expression r_round_par Body Else
+    ;
+
+Else
+    : else Body
+    | "empty"
+    ;
+
+/* CYCLE */
+Cycle
+    : while l_round_par Expression r_round_par do Body semicolon
+    ;
+
+/* PRINT */
+Print
+    : print l_round_par PrintList r_round_par semicolon
+    ;
+
+PrintList
+    : Expression PrintListTail
+    | cte_string PrintListTail
+    ;
+
+PrintListTail
+    : comma Expression PrintListTail
+    | comma cte_string PrintListTail
+    | "empty"
+    ;
+
+/* EXPRESSION */
+Expression
+    : Exp Operator Exp
+    | Exp
+    ;
+
+Operator
+    : less_than
+    | more_than
+    | not_equal
+    ;
+
+/* EXP */
+Exp
+    : Term ExpList
+    ;
+
+ExpList
+    : add Term ExpList
+    | rest Term ExpList
+    | "empty"
+    ;
+
+/* TERM */
+Term
+    : Factor TermList
+    ;
+
+TermList
+    : multiply Factor TermList
+    | divide Factor TermList
+    | "empty"
+    ;
+
+/* FACTOR */
+Factor
+    : l_round_par Expression r_round_par
+    | Cte
+    | id
+    | add Factor
+    | rest Factor
+    ;
+
+/* CTE */
+Cte
+    : cte_int
+    | cte_float
+    ;
+
+
+/* F_CALL */
+FCall
+    : id l_round_par FCallList r_round_par semicolon
+    ;
+
+FCallList
+    : Expression FCallListTail
+    | "empty"
+    ;
+
+FCallListTail
+    : comma Expression FCallListTail
+    | "empty"
+    ;
