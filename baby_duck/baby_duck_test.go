@@ -20,14 +20,14 @@ var testDataAccept = []*TI{
             print(x);
          }
          end`,
-	}, // Accept 1
+	}, // Accept 1: Declaración de variables, uso de operadores, función print
 	{
 		`program testProgram;
          main {
             print("Hello, world!");
          }
          end`,
-	}, // Accept 2
+	}, // Accept 2: Función main simplificada, variables y funciones opcionales, print de string
 	{
 		`program simple;
          var a: float;
@@ -38,10 +38,10 @@ var testDataAccept = []*TI{
             }
             else {
                 print("Small");
-            }
+            };
          }
          end`,
-	}, // Accept 3
+	}, // Accept 3: Asignación de variables, condicionales if-else, comparadores
 	{
 		`program withFunc;
          void sum(a: int, b: int)[
@@ -55,19 +55,19 @@ var testDataAccept = []*TI{
             sum(2,3);
          }
          end`,
-	}, // Accept 4
+	}, // Accept 4: Funciones que reciben parámetros, declaración de variables locales, llamada a funciones con parámetros
 	{
 		`program funcOnly;
-         void greet()[
+         void greetAndPrint()[
             {
-               print("Hi!");
+               print("Hi!", 1+2);
             }
          ];
          main {
-            greet();
+            greetAndPrint();
          }
          end`,
-	}, // Accept 5
+	}, // Accept 5: Función print con strings y expresiones
 	{
 		`program withCycle;
          var i: int;
@@ -79,20 +79,82 @@ var testDataAccept = []*TI{
             };
          }
          end`,
-	}, // Accept 6
+	}, // Accept 6: Uso de ciclo while-do
 	{
 		`program multiVars;
-         var a, b: int;
+         var a, b, c: int;
          main {
             a = 1;
-            b = 2.5;
+            b = 2;
             c = a + 2;
             print(a);
             print(b);
             print(c);
          }
          end`,
-	}, // Accept 7
+	}, // Accept 7: Asignación de variables, suma con constantes y variables
+	{
+		`program funcWithVars;
+        void calc()[ var a, b: int; {
+            a = 2;
+            b = a * 3;
+            print(b);
+        }];
+        main {
+            calc();
+        }
+        end`,
+	}, // Accept 8: Declaración local de variables, asignación de variables, llamada a una función
+	{
+		`program parentheses;
+        var result: float;
+        main {
+            result = (2 + 3) * (4 - 1);
+            print(result);
+        }
+        end`,
+	}, // Accept 9: Combinación de expresiones con paréntesis
+	{
+		`program complexExpr;
+        var a: int;
+        main {
+            a = 2 + 3 * -(-4 + 5);
+            print(a);
+        }
+        end`,
+	}, // Accept 10: Combinación de expresiones con operadores aritméticos
+	{
+		`program nestedIfs;
+        var x: int;
+        main {
+            x = 5;
+            if (x > 0) {
+                print("Positive");
+                if (x != 10) {
+                    print("X is not equal to 10");
+                }
+                else {
+                    print("10 or more");
+                };
+            }
+            else {
+                print("Non-positive");
+            };
+        }
+        end`,
+	}, // Accept 11: Uso de if-else anidados, condiciones con comparadores, print de string
+	{
+		`program wordTest;
+         void mainA()[
+            {
+               print("Magic");
+            }
+         ];
+         main {
+            mainA();
+         }
+         end`,
+	}, // Accept 12: Funciones que tienen palabras reservadas
 }
 
 var testDataFail = []*TI{
@@ -103,22 +165,14 @@ var testDataFail = []*TI{
             x = 5;
          }
          end`,
-	}, // Fail 1
-	{
-		`program missingMain;
-         var x: int;
-         {
-            x = 5;
-         }
-         end`,
-	}, // Fail 2
+	}, // Fail 1: Falta main, body inválido
 	{
 		`program noEnd;
          var x: int;
          main {
             x = 1;
          }`,
-	}, // Fail 3
+	}, // Fail 2: Falta end
 	{
 		`program missingSemicolon;
          var a: int;
@@ -127,7 +181,7 @@ var testDataFail = []*TI{
             print(a);
          }
          end`,
-	}, // Fail 4
+	}, // Fail 3: Falta punto y coma
 	{
 		`program badFunc;
          void add(int a, int b){
@@ -141,7 +195,7 @@ var testDataFail = []*TI{
             add(1,2);
          }
          end`,
-	}, // Fail 5
+	}, // Fail 4: FUNCS mal declarada (paréntesis y llaves)
 	{
 		`program badWhile;
          var i: int;
@@ -152,7 +206,25 @@ var testDataFail = []*TI{
             }
          }
          end`,
-	}, // Fail 6
+	}, // Fail 5: while sin paréntesis
+	{
+		`program badIf;
+        var a: int;
+        main {
+            if (a == 2);
+        }
+        end`,
+	}, // Fail 6: if con operador inválido (==)
+	{
+		`program badWhile2;
+        var i: int;
+        main {
+            while (i < 10) {
+                print(i);
+            }
+        }
+        end`,
+	}, // Fail 7: while sin 'do'
 }
 
 func TestParserAccept(t *testing.T) {

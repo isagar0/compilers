@@ -24,7 +24,7 @@ id           : (_lowcase | _upcase) { (_lowcase | _upcase | _digit | '_') } ;
 _special : ' ' | '!' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' |
            ':' | ';' | '<' | '=' | '>' | '?' | '@' |
            '[' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~' ;
-_chars       : _lowcase | _upcase | _special ;
+_chars       : _lowcase | _upcase | _special | _digit ;
 cte_int      : _digit { _digit } ;
 cte_float    : _digit { _digit } '.' _digit { _digit } ;
 cte_string   : '"' {_chars} '"' ;
@@ -130,7 +130,7 @@ Assign
 
 /* CONDITION */
 Condition
-    : if l_round_par Expression r_round_par Body Else
+    : if l_round_par Expression r_round_par Body Else semicolon
     ;
 
 Else

@@ -278,11 +278,11 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Condition : if l_round_par Expression r_round_par Body Else	<<  >>`,
+		String: `Condition : if l_round_par Expression r_round_par Body Else semicolon	<<  >>`,
 		Id:         "Condition",
 		NTType:     15,
 		Index:      26,
-		NumSymbols: 6,
+		NumSymbols: 7,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
 		},
