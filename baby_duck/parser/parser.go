@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	parseError "baby_duck/errors"
-	"baby_duck/token"
+	parseError "errors"
+	"token"
 )
 
 const (
-	numProductions = 61
-	numStates      = 287
-	numSymbols     = 68
+	numProductions = 62
+	numStates      = 291
+	numSymbols     = 69
 )
 
 // Stack

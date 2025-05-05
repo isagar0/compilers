@@ -6,7 +6,7 @@ import (
 	"os"
 	"unicode/utf8"
 
-	"baby_duck/token"
+	"token"
 )
 
 const (

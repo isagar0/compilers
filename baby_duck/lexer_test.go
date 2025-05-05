@@ -155,6 +155,34 @@ var testDataAccept = []*TI{
          }
          end`,
 	}, // Accept 12: Funciones que tienen palabras reservadas
+	{
+		`program varsDecla;
+         var x: int;
+         var y: int;
+         var z: float;
+         main {
+            
+         }
+         end`,
+	}, // Accept 13: Declaracion de Variables Globales
+	{
+		`program withFunc;
+         void sum(a: int, b: int, c: float)[
+            var result: int;
+            var result2: int;
+            var result3: float;
+            {
+                result = a + b;
+                result2 = a;
+                result3 = c + 2.1;
+                print(result);
+            }
+         ];
+         main {
+            sum(2,3, 3.2);
+         }
+         end`,
+	}, // Accept 14: Declaracion de Variables Locales
 }
 
 var testDataFail = []*TI{
