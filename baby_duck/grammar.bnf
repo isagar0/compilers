@@ -56,6 +56,8 @@ r_square_par : ']' ;
 /* -------------------------- Parser (Syntax) -------------------------- */
 <<
 import (
+    "fmt"
+    
     "baby_duck/semantics"
     "baby_duck/token"
 )
@@ -65,14 +67,19 @@ import (
 Program
     : program id semicolon Vars FunctionList main Body end
     <<
-    func() (Attrib, error) {
-        programName := string($1.(*token.Token).Lit)
-        err := semantics.RegisterMainProgram(programName)
-        if err != nil {
-            return nil, err
-        }
-        return nil, nil
-    }()
+        func() (Attrib, error) {
+            // Verificar que $1 sea un *token.Token
+            if token, ok := $1.(*token.Token); ok {
+                programName := string(token.Lit)
+                err := semantics.RegisterMainProgram(programName)
+                if err != nil {
+                    return nil, err
+                }
+                return nil, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $1)
+            }
+        }()
     >>
     ;
 
@@ -89,21 +96,73 @@ Vars
 
 VarDecl
     : var IdList colon Type semicolon
+    <<
+        func() (Attrib, error) {
+            // Obtener los identificadores de IdList (debe ser []string)
+            if ids, ok := $1.([]string); ok {
+                // Obtener el tipo de las variables
+                if tipoToken, ok := $3.(*token.Token); ok {
+                    tipo := string(tipoToken.Lit)
+
+                    // Declarar las variables en la tabla global
+                    _, err := semantics.VarDeclaration(ids, tipo, semantics.VarTable)
+                    if err != nil {
+                        return nil, err // Devolver el error si ocurre
+                    }
+
+                    return nil, nil // Si todo está bien, se devuelve nil
+                } else {
+                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", $3)
+                }
+            } else {
+                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", $1)
+            }
+        }()
+    >>
     ;
 
 IdList
     : id IdListTail
+    <<
+        func() (Attrib, error) {
+            if token, ok := $0.(*token.Token); ok {
+                idList := []string{string(token.Lit)}
+                if $1 != nil {
+                    idList = append(idList, $1.([]string)...)
+                }
+                return idList, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $0)
+            }
+        }()
+    >>
     ;
 
 IdListTail
     : comma id IdListTail
+    <<
+        func() (Attrib, error) {
+            if token, ok := $1.(*token.Token); ok {
+                ids := []string{string(token.Lit)}
+                if $2 != nil {
+                    ids = append(ids, $2.([]string)...)
+                }
+                return ids, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $1)
+            }
+        }()
+    >>
     | "empty"
+    << []string{}, nil >>
     ;
 
 /* TYPE */
 Type
     : int
+    << $0.(*token.Token), nil >>
     | float
+    << $0.(*token.Token), nil >>
     ;
 
 /* FUNCS */

@@ -12,61 +12,66 @@ type TI struct {
 
 var testDataAccept = []*TI{
 	{
-		`program withFuncs;
-         void one()[
-            var a: int;
-            {
-                print(a);
-            }
-         ];
-		 void two()[
-            var a: int;
-            {
-                print(a);
-            }
-         ];
-         main {
-            one();
-			two();
-         }
-         end`,
-	}, // Accept 1: Misma variable en diferentes funciones
+		`program ejemplo1;
+		 var x : int;
+		 main {
+			 x = 5;
+		 }
+		 end`,
+	}, // Accept 1: Variable global declarada y usada correctamente
 	{
-		`void sumar();
-		var 
-			x : int;
-			y : float;
-		{
-			x = 3;
-			y = 4.5;
-		}
-		`,
-	}, // Accept 1: Misma variable en diferentes funciones
+		`program funcionesLocales;
+		 void foo()[ 
+			var a : int;
+			{
+				print(a);
+			}
+		 ];
+		 void bar()[ 
+			var a : float;
+			{
+				print(a);
+			}
+		 ];
+		 main {
+			 foo();
+			 bar();
+		 }
+		 end`,
+	}, // Accept 2: Misma variable local 'a' en distintas funciones
+	{
+		`program sinVars;
+		 main {
+			 print("hello");
+		 }
+		 end`,
+	}, // Accept 3: Programa sin variables
 }
 
 var testDataFail = []*TI{
 	{
 		`program dupVar;
-         var x: int;
-         main {
-            x = 5;
-         }
-         end`,
+		 var x: int;
+		 var x: float;
+		 main {
+			 x = 5;
+		 }
+		 end`,
 	}, // Fail 1: Duplicación de variable global 'x'
 	{
-		`program withTwoLocs;
-         void one()[
-            var a: int;
-			var a: float;
-            {
-                print(a);
-            }
-         ];
-         main {
-            one();
-         }
-         end`,
-	}, // Fail 2: Duplicación de variable local 'x' dentro de la misma función
+		`program dupVarLocal;
+		 void algo()[ 
+			var y: int;
+			var y: float;
+			{
+				print(y);
+			}
+		 ];
+		 main {
+			 algo();
+		 }
+		 end`,
+	}, // Fail 2: Duplicación de variable local 'y' dentro de una función
 }
 
 func TestSemanticAccept(t *testing.T) {

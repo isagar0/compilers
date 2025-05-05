@@ -3,6 +3,8 @@
 package parser
 
 import (
+    "fmt"
+    
     "baby_duck/semantics"
     "baby_duck/token"
 )
@@ -34,26 +36,36 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Program : program id semicolon Vars FunctionList main Body end	<< func() (Attrib, error) {
-        programName := string(X[1].(*token.Token).Lit)
-        err := semantics.RegisterMainProgram(programName)
-        if err != nil {
-            return nil, err
-        }
-        return nil, nil
-    }() >>`,
+            // Verificar que X[1] sea un *token.Token
+            if token, ok := X[1].(*token.Token); ok {
+                programName := string(token.Lit)
+                err := semantics.RegisterMainProgram(programName)
+                if err != nil {
+                    return nil, err
+                }
+                return nil, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
+            }
+        }() >>`,
 		Id:         "Program",
 		NTType:     1,
 		Index:      1,
 		NumSymbols: 8,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        programName := string(X[1].(*token.Token).Lit)
-        err := semantics.RegisterMainProgram(programName)
-        if err != nil {
-            return nil, err
-        }
-        return nil, nil
-    }()
+            // Verificar que X[1] sea un *token.Token
+            if token, ok := X[1].(*token.Token); ok {
+                programName := string(token.Lit)
+                err := semantics.RegisterMainProgram(programName)
+                if err != nil {
+                    return nil, err
+                }
+                return nil, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
+            }
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -97,63 +109,143 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `VarDecl : var IdList colon Type semicolon	<<  >>`,
+		String: `VarDecl : var IdList colon Type semicolon	<< func() (Attrib, error) {
+            // Obtener los identificadores de IdList (debe ser []string)
+            if ids, ok := X[1].([]string); ok {
+                // Obtener el tipo de las variables
+                if tipoToken, ok := X[3].(*token.Token); ok {
+                    tipo := string(tipoToken.Lit)
+
+                    // Declarar las variables en la tabla global
+                    _, err := semantics.VarDeclaration(ids, tipo, semantics.VarTable)
+                    if err != nil {
+                        return nil, err // Devolver el error si ocurre
+                    }
+
+                    return nil, nil // Si todo está bien, se devuelve nil
+                } else {
+                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", X[3])
+                }
+            } else {
+                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", X[1])
+            }
+        }() >>`,
 		Id:         "VarDecl",
 		NTType:     4,
 		Index:      6,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+            // Obtener los identificadores de IdList (debe ser []string)
+            if ids, ok := X[1].([]string); ok {
+                // Obtener el tipo de las variables
+                if tipoToken, ok := X[3].(*token.Token); ok {
+                    tipo := string(tipoToken.Lit)
+
+                    // Declarar las variables en la tabla global
+                    _, err := semantics.VarDeclaration(ids, tipo, semantics.VarTable)
+                    if err != nil {
+                        return nil, err // Devolver el error si ocurre
+                    }
+
+                    return nil, nil // Si todo está bien, se devuelve nil
+                } else {
+                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", X[3])
+                }
+            } else {
+                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", X[1])
+            }
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `IdList : id IdListTail	<<  >>`,
+		String: `IdList : id IdListTail	<< func() (Attrib, error) {
+            if token, ok := X[0].(*token.Token); ok {
+                idList := []string{string(token.Lit)}
+                if X[1] != nil {
+                    idList = append(idList, X[1].([]string)...)
+                }
+                return idList, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[0])
+            }
+        }() >>`,
 		Id:         "IdList",
 		NTType:     5,
 		Index:      7,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+            if token, ok := X[0].(*token.Token); ok {
+                idList := []string{string(token.Lit)}
+                if X[1] != nil {
+                    idList = append(idList, X[1].([]string)...)
+                }
+                return idList, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[0])
+            }
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `IdListTail : comma id IdListTail	<<  >>`,
+		String: `IdListTail : comma id IdListTail	<< func() (Attrib, error) {
+            if token, ok := X[1].(*token.Token); ok {
+                ids := []string{string(token.Lit)}
+                if X[2] != nil {
+                    ids = append(ids, X[2].([]string)...)
+                }
+                return ids, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
+            }
+        }() >>`,
 		Id:         "IdListTail",
 		NTType:     6,
 		Index:      8,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+            if token, ok := X[1].(*token.Token); ok {
+                ids := []string{string(token.Lit)}
+                if X[2] != nil {
+                    ids = append(ids, X[2].([]string)...)
+                }
+                return ids, nil
+            } else {
+                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
+            }
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `IdListTail : "empty"	<<  >>`,
+		String: `IdListTail : "empty"	<< []string{}, nil >>`,
 		Id:         "IdListTail",
 		NTType:     6,
 		Index:      9,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return []string{}, nil
 		},
 	},
 	ProdTabEntry{
-		String: `Type : int	<<  >>`,
+		String: `Type : int	<< X[0].(*token.Token), nil >>`,
 		Id:         "Type",
 		NTType:     7,
 		Index:      10,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return X[0].(*token.Token), nil
 		},
 	},
 	ProdTabEntry{
-		String: `Type : float	<<  >>`,
+		String: `Type : float	<< X[0].(*token.Token), nil >>`,
 		Id:         "Type",
 		NTType:     7,
 		Index:      11,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return X[0].(*token.Token), nil
 		},
 	},
 	ProdTabEntry{

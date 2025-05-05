@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	parseError "errors"
-	"token"
+	parseError "baby_duck/errors"
+	"baby_duck/token"
 )
 
 const (

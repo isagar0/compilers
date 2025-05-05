@@ -38,16 +38,20 @@ func RegisterMainProgram(programName string) error {
 	return nil
 }
 
-// Procesa la declaración de variables y las agrega a la tabla correspondiente
+// Función para procesar la declaración de variables
 func VarDeclaration(ids []string, tipo string, tabla *Dictionary) (*Dictionary, error) {
 	if tabla == nil {
 		tabla = NewDictionary()
 	}
 
+	// Iteramos sobre los identificadores (nombres de variables)
 	for _, id := range ids {
+		// Verificamos si la variable ya está declarada en la tabla
 		if _, exists := tabla.Get(id); exists {
+			// Si ya existe, lanzamos un error
 			return nil, fmt.Errorf("error: variable '%s' ya declarada", id)
 		}
+		// Si no existe, la agregamos a la tabla
 		tabla.Put(id, VariableStructure{Name: id, Type: tipo})
 	}
 
