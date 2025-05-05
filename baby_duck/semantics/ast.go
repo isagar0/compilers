@@ -91,6 +91,26 @@ func FuncDeclaration(name string, params []VariableStructure, localVars *Diction
 	return nil
 }
 
+// RegisterFunction crea la entrada de la función con nombre, retorno void,
+// sin parámetros todavía, y le asigna una tabla de variables local vacía.
+func RegisterFunction(name string) error {
+	if _, exists := FunctionDirectory.Get(name); exists {
+		return fmt.Errorf("error: función '%s' ya declarada", name)
+	}
+
+	// 1) creamos la tabla local (de momento vacía)
+	localTable := NewDictionary()
+
+	// 2) registramos la función en el directorio
+	FunctionDirectory.Put(name, FunctionStructure{
+		Name:       name,
+		Parameters: []VariableStructure{}, // params vacía por ahora
+		VarTable:   localTable,
+	})
+
+	return nil
+}
+
 // Reinicia el estado semántico (limpia las tablas globales)
 func ResetSemanticState() {
 	VarTable = NewDictionary()

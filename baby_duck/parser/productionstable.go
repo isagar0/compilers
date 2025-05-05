@@ -249,13 +249,39 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Function : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon	<<  >>`,
+		String: `Function : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon	<< func() (Attrib, error) {
+      // X[1] = id
+      name := string(X[1].(*token.Token).Lit)
+
+      // 1) registramos la función (void, sin params)
+      if err := semantics.RegisterFunction(name); err != nil {
+        return nil, err
+      }
+
+      // 2) aquí podrías hacer EnterScope() si ya lo tienes listo,
+      //    pero de momento lo dejamos para más adelante.
+
+      return nil, nil
+    }() >>`,
 		Id:         "Function",
 		NTType:     8,
 		Index:      12,
 		NumSymbols: 10,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+      // X[1] = id
+      name := string(X[1].(*token.Token).Lit)
+
+      // 1) registramos la función (void, sin params)
+      if err := semantics.RegisterFunction(name); err != nil {
+        return nil, err
+      }
+
+      // 2) aquí podrías hacer EnterScope() si ya lo tienes listo,
+      //    pero de momento lo dejamos para más adelante.
+
+      return nil, nil
+    }()
 		},
 	},
 	ProdTabEntry{

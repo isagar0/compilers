@@ -46,6 +46,16 @@ var testDataAccept = []*TI{
 		 }
 		 end`,
 	}, // Accept 3: Programa sin variables
+	{
+		`program prueba;
+		 void foo()[
+			{}
+		 ];
+		 main {
+			
+		 }
+		 end`,
+	}, // Accept 4: Registro de función foo sin parámetros ni vars
 }
 
 var testDataFail = []*TI{
@@ -72,6 +82,18 @@ var testDataFail = []*TI{
 		 }
 		 end`,
 	}, // Fail 2: Duplicación de variable local 'y' dentro de una función
+	{
+		`program dupFunc;
+		 void foo()[
+		 	{}
+		 ];
+		 void foo()[
+		 	{}
+		 ];
+		 main {
+		 }
+		 end`,
+	}, // Fail 3: Duplicación de función 'foo'
 }
 
 func TestSemanticAccept(t *testing.T) {
