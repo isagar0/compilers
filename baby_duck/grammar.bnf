@@ -163,46 +163,41 @@ Type
 /* FUNCS */
 Function
   : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon
-  <<
-    func() (Attrib, error) {
-      // X[1] = nombre de la función
-      name := string(X[1].(*token.Token).Lit)
+    <<
+      func() (Attrib, error) {
+        // 1) Nombre de la función
+        name := string($1.(*token.Token).Lit)
 
-      // 1) registramos la función (void, sin params)
-      if err := semantics.RegisterFunction(name); err != nil {
-        return nil, err
-      }
-
-      // 2) abrimos el scope local para esta función
-      semantics.EnterScope()
-
-      // 3) extraemos los parámetros
-      params, ok := X[3].([]semantics.VariableStructure)
-      if !ok {
-        semantics.ExitScope()
-        return nil, fmt.Errorf("esperaba []VariableStructure en Params, pero fue %T", X[3])
-      }
-
-      // 4) cada parámetro como variable local
-      // 4) cada parámetro como variable local
-        for _, p := range params {
-            if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-                semantics.ExitScope()
-                return nil, err
-            }
+        // 2) registro preliminar (void, sin params todavía)
+        if err := semantics.RegisterFunction(name); err != nil {
+          return nil, err
         }
 
-      // 5) actualizamos la entrada de la función con sus parámetros y su tabla local
-      if err := semantics.FuncDeclaration(name, params); err != nil {
-        semantics.ExitScope()
-        return nil, err
-      }
+        // 3) abro el scope local para parámetros y vars
+        semantics.EnterScope()
 
-      // 6) cerramos el scope local
-      semantics.ExitScope()
-      return nil, nil
-    }()
-  >>
+        // 4) declaro cada parámetro en este scope local
+        params := $3.([]semantics.VariableStructure)
+        for _, p := range params {
+          if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
+            semantics.ExitScope()
+            return nil, err
+          }
+        }
+
+        // 5) (Vars ya habrá llamado a VarDeclaration para las vars locales)
+
+        // 6) actualizo la entrada de la función con sus params y su tabla local
+        if err := semantics.FuncDeclaration(name, params); err != nil {
+          semantics.ExitScope()
+          return nil, err
+        }
+
+        // 7) cierro el scope local y vuelvo al global
+        semantics.ExitScope()
+        return nil, nil
+      }()
+    >>
   ;
 
 /* Lista de parámetros, siempre retorna un slice (no nil) */

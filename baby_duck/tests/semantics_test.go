@@ -24,23 +24,23 @@ var testDataAccept = []*TI{
 	/*
 		{
 			`program funcionesLocales;
-			 void foo()[
+				void foo()[
 				var a : int;
 				{
 					print(a);
 				}
-			 ];
-			 void bar()[
+				];
+				void bar()[
 				var a : float;
 				{
 					print(a);
 				}
-			 ];
-			 main {
-				 foo();
-				 bar();
-			 }
-			 end`,
+				];
+				main {
+					foo();
+					bar();
+				}
+				end`,
 		}, // Accept 2: Misma variable local 'a' en distintas funciones
 	*/
 	{
@@ -72,6 +72,22 @@ var testDataAccept = []*TI{
 		 }
 		 end`,
 	}, // Accept 5: Función con parámetros `a:int` y `b:float`
+	{
+		`program withFunc;
+		 var x : int;
+         void sum(a: int, b: int)[
+            var result: int;
+            {
+                result = a + b;
+                print(result);
+            }
+         ];
+         main {
+		 	x = 2;
+            sum(x,3);
+         }
+         end`,
+	}, // Accept 6: Funcion con variables globales y locales
 }
 
 var testDataFail = []*TI{
