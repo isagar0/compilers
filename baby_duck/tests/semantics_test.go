@@ -3,6 +3,8 @@ package tests
 import (
 	"baby_duck/lexer"
 	"baby_duck/parser"
+	"baby_duck/semantics"
+	"fmt"
 	"testing"
 )
 
@@ -117,12 +119,30 @@ var testDataFail = []*TI{
 }
 
 func TestSemanticAccept(t *testing.T) {
+	// Reiniciamos semántica antes de empezar
+	semantics.ResetSemanticState()
+
 	p := parser.NewParser()
 	for i, ts := range testDataAccept {
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
 		if err != nil {
-			t.Errorf("Test %d (ACCEPT) failed: unexpected parse error.\nSource start: %.50s...\nError: %s", i+1, ts.src, err.Error())
+			t.Errorf("Test %d (ACCEPT) failed: unexpected parse error.\nSource start: %.50s...\nError: %s",
+				i+1, ts.src, err.Error())
+			continue
+		}
+
+		// —— Al final, imprimimos las tablas ——
+		fmt.Println("=== Tabla de variables globales ===")
+		semantics.Current().PrintOrdered()
+
+		fmt.Println("\n=== Directorio de funciones y sus tablas locales ===")
+		for _, fname := range semantics.FunctionDirectory.Keys() {
+			fmt.Printf("Función %s:\n", fname)
+			entry, _ := semantics.FunctionDirectory.Get(fname)
+			fs := entry.(semantics.FunctionStructure)
+			fs.VarTable.PrintOrdered()
+			fmt.Println()
 		}
 	}
 }

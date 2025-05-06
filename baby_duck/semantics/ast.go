@@ -18,20 +18,36 @@ type FunctionStructure struct {
 var VarTable = NewDictionary()
 var FunctionDirectory = NewDictionary()
 
-// Función para registrar el programa principal
+// Reset reinicia el scope global y limpia la pila de scopes locales.
+func Reset() {
+	scopes = &ScopeManager{
+		global: NewDictionary(),
+		stack:  []*Dictionary{},
+	}
+}
+
+// ResetSemanticState limpia el directorio de funciones y el scope global.
+func ResetSemanticState() {
+	// 1) reinicia el scope manager
+	Reset() // de scope.go
+	// 2) reinicia el FunctionDirectory
+	FunctionDirectory = NewDictionary()
+}
+
+// RegisterMainProgram crea el scope global y registra el programa principal.
 func RegisterMainProgram(programName string) error {
-	// Verificamos si ya existe el nombre del programa en el diccionario de funciones
+	// 1) volver a un estado limpio
+	ResetSemanticState()
+
+	// 2) error si ya existe el programa
 	if _, exists := FunctionDirectory.Get(programName); exists {
 		return fmt.Errorf("error: el programa '%s' ya ha sido declarado", programName)
 	}
 
-	// Inicializamos la tabla de variables global para el programa
-	VarTable = NewDictionary()
-
-	// Registramos el programa en el FunctionDirectory
+	// 3) registra el programa como función void, usando la tabla global actual
 	FunctionDirectory.Put(programName, FunctionStructure{
 		Name:     programName,
-		VarTable: VarTable, // Asignamos la tabla de variables globales
+		VarTable: Current(), // aquí guardamos el scope global
 	})
 
 	fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
@@ -41,12 +57,21 @@ func RegisterMainProgram(programName string) error {
 // Función para procesar la declaración de variables en el scope actual
 func VarDeclaration(ids []string, tipo string) error {
 	tabla := Current() // usa la tabla activa de scope.go
+
 	for _, id := range ids {
 		if _, exists := tabla.Get(id); exists {
 			return fmt.Errorf("error: variable '%s' ya declarada en este ámbito", id)
 		}
 		tabla.Put(id, VariableStructure{Name: id, Type: tipo})
 	}
+
+	/*
+		// ——— Imprimimos el contenido del scope actual ———
+		fmt.Println(">>> Contenido del scope actual antes de declarar:")
+		tabla.PrintOrdered()
+		fmt.Println(">>> Fin del scope actual")
+	*/
+
 	return nil
 }
 
@@ -96,10 +121,4 @@ func RegisterFunction(name string) error {
 	})
 
 	return nil
-}
-
-// Reinicia el estado semántico (limpia las tablas globales)
-func ResetSemanticState() {
-	VarTable = NewDictionary()
-	FunctionDirectory = NewDictionary()
 }
