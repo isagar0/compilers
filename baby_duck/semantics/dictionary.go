@@ -5,15 +5,26 @@ import "fmt"
 // Dictionary: Almacena pares clave-valor (string-valor de cualquier tipo)
 // Utiliza keys para mantener el orden de inserción de las claves
 type Dictionary struct {
-	items map[string]interface{} // Mapa para almacenar cualquier tipo de valor
-	keys  []string               // Slice para ordenar las claves
+	items  map[string]interface{} // Mapa para almacenar cualquier tipo de valor
+	keys   []string               // Slice para ordenar las claves
+	parent *Dictionary
 }
 
 // NewDictionary: Constructor del diccionario
 func NewDictionary() *Dictionary {
 	return &Dictionary{
-		items: make(map[string]interface{}),
-		keys:  []string{},
+		items:  make(map[string]interface{}),
+		keys:   []string{},
+		parent: nil,
+	}
+}
+
+// Nuevo constructor anidado
+func NewChildDictionary(parent *Dictionary) *Dictionary {
+	return &Dictionary{
+		items:  make(map[string]interface{}),
+		keys:   []string{},
+		parent: parent,
 	}
 }
 
@@ -28,8 +39,13 @@ func (d *Dictionary) Put(key string, value interface{}) {
 
 // Get: Obtiene el valor asociado a una clave
 func (d *Dictionary) Get(key string) (interface{}, bool) {
-	value, exists := d.items[key]
-	return value, exists
+	if val, ok := d.items[key]; ok {
+		return val, true
+	}
+	if d.parent != nil {
+		return d.parent.Get(key)
+	}
+	return nil, false
 }
 
 // Remove: Elimina una clave-valor y actualiza la lista de claves

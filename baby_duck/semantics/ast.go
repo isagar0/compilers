@@ -38,24 +38,16 @@ func RegisterMainProgram(programName string) error {
 	return nil
 }
 
-// Función para procesar la declaración de variables
-func VarDeclaration(ids []string, tipo string, tabla *Dictionary) (*Dictionary, error) {
-	if tabla == nil {
-		tabla = NewDictionary()
-	}
-
-	// Iteramos sobre los identificadores (nombres de variables)
+// Función para procesar la declaración de variables en el scope actual
+func VarDeclaration(ids []string, tipo string) error {
+	tabla := Current() // usa la tabla activa de scope.go
 	for _, id := range ids {
-		// Verificamos si la variable ya está declarada en la tabla
 		if _, exists := tabla.Get(id); exists {
-			// Si ya existe, lanzamos un error
-			return nil, fmt.Errorf("error: variable '%s' ya declarada", id)
+			return fmt.Errorf("error: variable '%s' ya declarada en este ámbito", id)
 		}
-		// Si no existe, la agregamos a la tabla
 		tabla.Put(id, VariableStructure{Name: id, Type: tipo})
 	}
-
-	return tabla, nil
+	return nil
 }
 
 // Verifica que los parámetros de una función no estén duplicados
@@ -70,24 +62,19 @@ func ValidateParams(params []VariableStructure) error {
 	return nil
 }
 
-// Procesa la declaración de una función
-func FuncDeclaration(name string, params []VariableStructure, localVars *Dictionary) error {
-	if _, exists := FunctionDirectory.Get(name); exists {
-		return fmt.Errorf("error: funcion '%s' ya declarada", name)
-	}
-
-	// Valida que no haya parámetros duplicados
+// FuncDeclaration actualiza la entrada creada por RegisterFunction
+func FuncDeclaration(name string, params []VariableStructure) error {
 	if err := ValidateParams(params); err != nil {
 		return err
 	}
-
-	// Se agrega la función a la tabla de funciones
-	FunctionDirectory.Put(name, FunctionStructure{
-		Name:       name,
-		Parameters: params,
-		VarTable:   localVars,
-	})
-
+	raw, exists := FunctionDirectory.Get(name)
+	if !exists {
+		return fmt.Errorf("error interno: función '%s' no registrada previamente", name)
+	}
+	fs := raw.(FunctionStructure)
+	fs.Parameters = params
+	fs.VarTable = Current() // la tabla local donde metimos los params
+	FunctionDirectory.Put(name, fs)
 	return nil
 }
 

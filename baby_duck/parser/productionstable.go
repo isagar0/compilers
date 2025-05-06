@@ -117,9 +117,8 @@ var productionsTable = ProdTab{
                     tipo := string(tipoToken.Lit)
 
                     // Declarar las variables en la tabla global
-                    _, err := semantics.VarDeclaration(ids, tipo, semantics.VarTable)
-                    if err != nil {
-                        return nil, err // Devolver el error si ocurre
+                    if err := semantics.VarDeclaration(ids, tipo); err != nil {
+                        return nil, err
                     }
 
                     return nil, nil // Si todo está bien, se devuelve nil
@@ -143,9 +142,8 @@ var productionsTable = ProdTab{
                     tipo := string(tipoToken.Lit)
 
                     // Declarar las variables en la tabla global
-                    _, err := semantics.VarDeclaration(ids, tipo, semantics.VarTable)
-                    if err != nil {
-                        return nil, err // Devolver el error si ocurre
+                    if err := semantics.VarDeclaration(ids, tipo); err != nil {
+                        return nil, err
                     }
 
                     return nil, nil // Si todo está bien, se devuelve nil
@@ -250,7 +248,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Function : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon	<< func() (Attrib, error) {
-      // X[1] = id
+      // X[1] = nombre de la función
       name := string(X[1].(*token.Token).Lit)
 
       // 1) registramos la función (void, sin params)
@@ -258,9 +256,33 @@ var productionsTable = ProdTab{
         return nil, err
       }
 
-      // 2) aquí podrías hacer EnterScope() si ya lo tienes listo,
-      //    pero de momento lo dejamos para más adelante.
+      // 2) abrimos el scope local para esta función
+      semantics.EnterScope()
 
+      // 3) extraemos los parámetros
+      params, ok := X[3].([]semantics.VariableStructure)
+      if !ok {
+        semantics.ExitScope()
+        return nil, fmt.Errorf("esperaba []VariableStructure en Params, pero fue %T", X[3])
+      }
+
+      // 4) cada parámetro como variable local
+      // 4) cada parámetro como variable local
+        for _, p := range params {
+            if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
+                semantics.ExitScope()
+                return nil, err
+            }
+        }
+
+      // 5) actualizamos la entrada de la función con sus parámetros y su tabla local
+      if err := semantics.FuncDeclaration(name, params); err != nil {
+        semantics.ExitScope()
+        return nil, err
+      }
+
+      // 6) cerramos el scope local
+      semantics.ExitScope()
       return nil, nil
     }() >>`,
 		Id:         "Function",
@@ -269,7 +291,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 10,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-      // X[1] = id
+      // X[1] = nombre de la función
       name := string(X[1].(*token.Token).Lit)
 
       // 1) registramos la función (void, sin params)
@@ -277,61 +299,143 @@ var productionsTable = ProdTab{
         return nil, err
       }
 
-      // 2) aquí podrías hacer EnterScope() si ya lo tienes listo,
-      //    pero de momento lo dejamos para más adelante.
+      // 2) abrimos el scope local para esta función
+      semantics.EnterScope()
 
+      // 3) extraemos los parámetros
+      params, ok := X[3].([]semantics.VariableStructure)
+      if !ok {
+        semantics.ExitScope()
+        return nil, fmt.Errorf("esperaba []VariableStructure en Params, pero fue %T", X[3])
+      }
+
+      // 4) cada parámetro como variable local
+      // 4) cada parámetro como variable local
+        for _, p := range params {
+            if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
+                semantics.ExitScope()
+                return nil, err
+            }
+        }
+
+      // 5) actualizamos la entrada de la función con sus parámetros y su tabla local
+      if err := semantics.FuncDeclaration(name, params); err != nil {
+        semantics.ExitScope()
+        return nil, err
+      }
+
+      // 6) cerramos el scope local
+      semantics.ExitScope()
       return nil, nil
     }()
 		},
 	},
 	ProdTabEntry{
-		String: `Params : ParamList	<<  >>`,
+		String: `Params : ParamList	<< func() (Attrib, error) {
+          // X[0] es el slice construido en ParamList
+          list, ok := X[0].([]semantics.VariableStructure)
+          if !ok {
+            return nil, fmt.Errorf("esperaba []VariableStructure en ParamList, pero fue %T", X[0])
+          }
+          return list, nil
+        }() >>`,
 		Id:         "Params",
 		NTType:     9,
 		Index:      13,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          // X[0] es el slice construido en ParamList
+          list, ok := X[0].([]semantics.VariableStructure)
+          if !ok {
+            return nil, fmt.Errorf("esperaba []VariableStructure en ParamList, pero fue %T", X[0])
+          }
+          return list, nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `Params : "empty"	<<  >>`,
+		String: `Params : "empty"	<< []semantics.VariableStructure{}, nil >>`,
 		Id:         "Params",
 		NTType:     9,
 		Index:      14,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return []semantics.VariableStructure{}, nil
 		},
 	},
 	ProdTabEntry{
-		String: `ParamList : id colon Type ParamListTail	<<  >>`,
+		String: `ParamList : id colon Type ParamListTail	<< func() (Attrib, error) {
+        // X[0]=id, X[2]=Type, X[3]=la cola
+        nameTok := X[0].(*token.Token)
+        tipoTok := X[2].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if tail, ok := X[3].([]semantics.VariableStructure); ok {
+          list = append(list, tail...)
+        }
+        return list, nil
+      }() >>`,
 		Id:         "ParamList",
 		NTType:     10,
 		Index:      15,
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        // X[0]=id, X[2]=Type, X[3]=la cola
+        nameTok := X[0].(*token.Token)
+        tipoTok := X[2].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if tail, ok := X[3].([]semantics.VariableStructure); ok {
+          list = append(list, tail...)
+        }
+        return list, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `ParamListTail : comma id colon Type ParamListTail	<<  >>`,
+		String: `ParamListTail : comma id colon Type ParamListTail	<< func() (Attrib, error) {
+        // X[1]=id, X[3]=Type, X[4]=ParamListTail
+        nameTok := X[1].(*token.Token)
+        tipoTok := X[3].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if more, ok := X[4].([]semantics.VariableStructure); ok {
+          list = append(list, more...)
+        }
+        return list, nil
+      }() >>`,
 		Id:         "ParamListTail",
 		NTType:     11,
 		Index:      16,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        // X[1]=id, X[3]=Type, X[4]=ParamListTail
+        nameTok := X[1].(*token.Token)
+        tipoTok := X[3].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if more, ok := X[4].([]semantics.VariableStructure); ok {
+          list = append(list, more...)
+        }
+        return list, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `ParamListTail : "empty"	<<  >>`,
+		String: `ParamListTail : "empty"	<< []semantics.VariableStructure{}, nil >>`,
 		Id:         "ParamListTail",
 		NTType:     11,
 		Index:      17,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return []semantics.VariableStructure{}, nil
 		},
 	},
 	ProdTabEntry{

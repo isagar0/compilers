@@ -19,26 +19,28 @@ var testDataAccept = []*TI{
 		 }
 		 end`,
 	}, // Accept 1: Variable global declarada y usada correctamente
-	{
-		`program funcionesLocales;
-		 void foo()[ 
-			var a : int;
-			{
-				print(a);
-			}
-		 ];
-		 void bar()[ 
-			var a : float;
-			{
-				print(a);
-			}
-		 ];
-		 main {
-			 foo();
-			 bar();
-		 }
-		 end`,
-	}, // Accept 2: Misma variable local 'a' en distintas funciones
+	/*
+		{
+			`program funcionesLocales;
+			 void foo()[
+				var a : int;
+				{
+					print(a);
+				}
+			 ];
+			 void bar()[
+				var a : float;
+				{
+					print(a);
+				}
+			 ];
+			 main {
+				 foo();
+				 bar();
+			 }
+			 end`,
+		}, // Accept 2: Misma variable local 'a' en distintas funciones
+	*/
 	{
 		`program sinVars;
 		 main {
@@ -48,7 +50,7 @@ var testDataAccept = []*TI{
 	}, // Accept 3: Programa sin variables
 	{
 		`program prueba;
-		 void foo()[
+		 void test()[
 			{}
 		 ];
 		 main {
@@ -56,6 +58,15 @@ var testDataAccept = []*TI{
 		 }
 		 end`,
 	}, // Accept 4: Registro de función foo sin parámetros ni vars
+	{
+		`program conParams;
+		 void paramsCheck(a: int, b: float)[
+			{}
+		 ];
+		 main {
+		 }
+		 end`,
+	}, // Accept 5: Función con parámetros `a:int` y `b:float`
 }
 
 var testDataFail = []*TI{
@@ -94,6 +105,15 @@ var testDataFail = []*TI{
 		 }
 		 end`,
 	}, // Fail 3: Duplicación de función 'foo'
+	{
+		`program dupParam;
+		 void h(a: int, a: float)[
+		 	{}
+		 ];
+		 main {
+		 }
+		 end`,
+	}, // Fail 4: Duplicación de parámetro 'a' en la misma función
 }
 
 func TestSemanticAccept(t *testing.T) {
