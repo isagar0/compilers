@@ -55,12 +55,17 @@ r_square_par : ']' ;
 
 /* -------------------------- Parser (Syntax) -------------------------- */
 <<
-import (
+  import (
     "fmt"
-    
     "baby_duck/semantics"
     "baby_duck/token"
-)
+  )
+  
+  // Helper para pasar nombre+params
+  type FuncInfo struct {
+    Name   string
+    Params []semantics.VariableStructure
+  }
 >>
 
 /* PROGRAM */
@@ -161,39 +166,48 @@ Type
     ;
 
 /* FUNCS */
-Function
-  : void id l_round_par Params r_round_par l_square_par Vars Body r_square_par semicolon
+/* CABECERA de función: registra el nombre, abre el scope, declara parámetros */
+FunctionHeader
+  : void id l_round_par Params r_round_par l_square_par
     <<
       func() (Attrib, error) {
-        // 1) Nombre de la función
-        name := string($1.(*token.Token).Lit)
+        // X[1] = id, X[3] = Params
+        name   := string(X[1].(*token.Token).Lit)
+        params := $3.([]semantics.VariableStructure)
 
-        // 2) registro preliminar (void, sin params todavía)
+        // 1) registro preliminar (void, sin vars aún)
         if err := semantics.RegisterFunction(name); err != nil {
           return nil, err
         }
-
-        // 3) abro el scope local para parámetros y vars
+        // 2) abro el scope local
         semantics.EnterScope()
-
-        // 4) declaro cada parámetro en este scope local
-        params := $3.([]semantics.VariableStructure)
+        // 3) declaro los parámetros en ese scope
         for _, p := range params {
           if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
             semantics.ExitScope()
             return nil, err
           }
         }
+        // devolvemos la info para la segunda parte
+        return FuncInfo{Name: name, Params: params}, nil
+      }()
+    >>
+  ;
 
-        // 5) (Vars ya habrá llamado a VarDeclaration para las vars locales)
+/* CUERPO de función: consume vars locales, cierra el scope y completa el registro */
+Function
+  : FunctionHeader Vars Body r_square_par semicolon
+    <<
+      func() (Attrib, error) {
+        // recupero lo que devolvió FunctionHeader
+        info := X[0].(FuncInfo)
 
-        // 6) actualizo la entrada de la función con sus params y su tabla local
-        if err := semantics.FuncDeclaration(name, params); err != nil {
+        // 1) actualizo la entrada con params y VarTable local
+        if err := semantics.FuncDeclaration(info.Name, info.Params); err != nil {
           semantics.ExitScope()
           return nil, err
         }
-
-        // 7) cierro el scope local y vuelvo al global
+        // 2) cierro el scope local
         semantics.ExitScope()
         return nil, nil
       }()

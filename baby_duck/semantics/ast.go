@@ -51,12 +51,17 @@ func RegisterMainProgram(programName string) error {
 	})
 
 	fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
+
+	fmt.Printf("[DEBUG] RegisterMainProgram %s → global scope %p\n",
+		programName, Current())
 	return nil
 }
 
 // Función para procesar la declaración de variables en el scope actual
 func VarDeclaration(ids []string, tipo string) error {
 	tabla := Current() // usa la tabla activa de scope.go
+	fmt.Printf("[DEBUG] VarDeclaration %v in scope %p, parent=%p, before=%v\n",
+		ids, tabla, tabla.parent, tabla.Keys())
 
 	for _, id := range ids {
 		if _, exists := tabla.Get(id); exists {
@@ -71,6 +76,9 @@ func VarDeclaration(ids []string, tipo string) error {
 		tabla.PrintOrdered()
 		fmt.Println(">>> Fin del scope actual")
 	*/
+
+	fmt.Printf("[DEBUG] VarDeclaration %v done in scope %p, after=%v\n",
+		ids, tabla, tabla.Keys())
 
 	return nil
 }
@@ -112,6 +120,9 @@ func RegisterFunction(name string) error {
 
 	// 1) creamos la tabla local (de momento vacía)
 	localTable := NewDictionary()
+
+	fmt.Printf("[DEBUG] RegisterFunction %s → local scope %p\n",
+		name, localTable)
 
 	// 2) registramos la función en el directorio
 	FunctionDirectory.Put(name, FunctionStructure{
