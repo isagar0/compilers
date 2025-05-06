@@ -45,11 +45,14 @@ var testDataAccept = []*TI{
 	*/
 	{
 		`program sinVars;
+		 var a : int;
+		 var b: float;
+		 var c: int;
 		 main {
 			 print("hello");
 		 }
 		 end`,
-	}, // Accept 3: Programa sin variables
+	}, // Accept 3: Programa sin variables o parametros
 	{
 		`program prueba;
 		 void test()[
@@ -59,7 +62,7 @@ var testDataAccept = []*TI{
 			
 		 }
 		 end`,
-	}, // Accept 4: Registro de función foo sin parámetros ni vars
+	}, // Accept 4: Registro de función foo con parametros globales
 	{
 		`program conParams;
 		 void paramsCheck(a: int, b: float)[
@@ -119,11 +122,11 @@ var testDataFail = []*TI{
 }
 
 func TestSemanticAccept(t *testing.T) {
-	// Reiniciamos semántica antes de empezar
-	semantics.ResetSemanticState()
-
 	p := parser.NewParser()
 	for i, ts := range testDataAccept {
+		// Reiniciamos semántica antes de empezar
+		semantics.ResetSemanticState()
+
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
 		if err != nil {

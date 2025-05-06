@@ -37,7 +37,7 @@ func ResetSemanticState() {
 // RegisterMainProgram crea el scope global y registra el programa principal.
 func RegisterMainProgram(programName string) error {
 	// 1) volver a un estado limpio
-	ResetSemanticState()
+	// ResetSemanticState()
 
 	// 2) error si ya existe el programa
 	if _, exists := FunctionDirectory.Get(programName); exists {

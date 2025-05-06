@@ -36,36 +36,28 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Program : program id semicolon Vars FunctionList main Body end	<< func() (Attrib, error) {
-            // Verificar que X[1] sea un *token.Token
-            if token, ok := X[1].(*token.Token); ok {
-                programName := string(token.Lit)
-                err := semantics.RegisterMainProgram(programName)
-                if err != nil {
-                    return nil, err
-                }
-                return nil, nil
-            } else {
-                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
-            }
-        }() >>`,
+        // 2) registro el main antes de Vars
+        token := X[1].(*token.Token)
+        name := string(token.Lit)
+        if err := semantics.RegisterMainProgram(name); err != nil {
+          return nil, err
+        }
+        return nil, nil
+      }() >>`,
 		Id:         "Program",
 		NTType:     1,
 		Index:      1,
 		NumSymbols: 8,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-            // Verificar que X[1] sea un *token.Token
-            if token, ok := X[1].(*token.Token); ok {
-                programName := string(token.Lit)
-                err := semantics.RegisterMainProgram(programName)
-                if err != nil {
-                    return nil, err
-                }
-                return nil, nil
-            } else {
-                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
-            }
-        }()
+        // 2) registro el main antes de Vars
+        token := X[1].(*token.Token)
+        name := string(token.Lit)
+        if err := semantics.RegisterMainProgram(name); err != nil {
+          return nil, err
+        }
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{

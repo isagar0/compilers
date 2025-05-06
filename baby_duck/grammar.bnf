@@ -65,23 +65,19 @@ import (
 
 /* PROGRAM */
 Program
-    : program id semicolon Vars FunctionList main Body end
+  : program id semicolon Vars FunctionList main Body end
     <<
-        func() (Attrib, error) {
-            // Verificar que $1 sea un *token.Token
-            if token, ok := $1.(*token.Token); ok {
-                programName := string(token.Lit)
-                err := semantics.RegisterMainProgram(programName)
-                if err != nil {
-                    return nil, err
-                }
-                return nil, nil
-            } else {
-                return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $1)
-            }
-        }()
+      func() (Attrib, error) {
+        // 2) registro el main antes de Vars
+        token := $1.(*token.Token)
+        name := string(token.Lit)
+        if err := semantics.RegisterMainProgram(name); err != nil {
+          return nil, err
+        }
+        return nil, nil
+      }()
     >>
-    ;
+  ;
 
 FunctionList
     : Function FunctionList
