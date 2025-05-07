@@ -854,53 +854,135 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `FCall : id l_round_par FCallList r_round_par semicolon	<<  >>`,
+		String: `FCall : id l_round_par FCallList r_round_par semicolon	<< func() (Attrib, error) {
+        // 1) nombre de la función
+        fnTok, ok := X[0].(*token.Token)
+        if !ok {
+          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
+        }
+        name := string(fnTok.Lit)
+
+        // 2) recogemos el slice de argumentos
+        args, ok := X[2].([]Attrib)
+        if !ok {
+          return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
+        }
+
+        // 3) comprobamos que la función exista
+        raw, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+        fs := raw.(semantics.FunctionStructure)
+
+        // 4) comprobamos número de argumentos
+        if len(args) != len(fs.Parameters) {
+          return nil, fmt.Errorf(
+            "error: función '%s' espera %d args, recibió %d",
+            name, len(fs.Parameters), len(args),
+          )
+        }
+
+        // 5) (Opcional) aquí podrías comparar tipos:
+        //    if fs.Parameters[i].Type != <tipo de args[i]> { … }
+
+        return X[0], nil
+      }() >>`,
 		Id:         "FCall",
 		NTType:     31,
 		Index:      58,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        // 1) nombre de la función
+        fnTok, ok := X[0].(*token.Token)
+        if !ok {
+          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
+        }
+        name := string(fnTok.Lit)
+
+        // 2) recogemos el slice de argumentos
+        args, ok := X[2].([]Attrib)
+        if !ok {
+          return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
+        }
+
+        // 3) comprobamos que la función exista
+        raw, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+        fs := raw.(semantics.FunctionStructure)
+
+        // 4) comprobamos número de argumentos
+        if len(args) != len(fs.Parameters) {
+          return nil, fmt.Errorf(
+            "error: función '%s' espera %d args, recibió %d",
+            name, len(fs.Parameters), len(args),
+          )
+        }
+
+        // 5) (Opcional) aquí podrías comparar tipos:
+        //    if fs.Parameters[i].Type != <tipo de args[i]> { … }
+
+        return X[0], nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `FCallList : Expression FCallListTail	<<  >>`,
+		String: `FCallList : Expression FCallListTail	<< func() (Attrib, error) {
+          first := X[0].(Attrib)
+          tail, _ := X[1].([]Attrib)
+          return append([]Attrib{first}, tail...), nil
+        }() >>`,
 		Id:         "FCallList",
 		NTType:     32,
 		Index:      59,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          first := X[0].(Attrib)
+          tail, _ := X[1].([]Attrib)
+          return append([]Attrib{first}, tail...), nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `FCallList : "empty"	<<  >>`,
+		String: `FCallList : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallList",
 		NTType:     32,
 		Index:      60,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return []Attrib{}, nil
 		},
 	},
 	ProdTabEntry{
-		String: `FCallListTail : comma Expression FCallListTail	<<  >>`,
+		String: `FCallListTail : comma Expression FCallListTail	<< func() (Attrib, error) {
+          arg := X[1].(Attrib)
+          more, _ := X[2].([]Attrib)
+          return append([]Attrib{arg}, more...), nil
+        }() >>`,
 		Id:         "FCallListTail",
 		NTType:     33,
 		Index:      61,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          arg := X[1].(Attrib)
+          more, _ := X[2].([]Attrib)
+          return append([]Attrib{arg}, more...), nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `FCallListTail : "empty"	<<  >>`,
+		String: `FCallListTail : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallListTail",
 		NTType:     33,
 		Index:      62,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return []Attrib{}, nil
 		},
 	},
 }

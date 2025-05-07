@@ -395,16 +395,71 @@ Cte
 
 
 /* F_CALL */
+/* F_CALL */
 FCall
-    : id l_round_par FCallList r_round_par semicolon
-    ;
+  : id l_round_par FCallList r_round_par semicolon
+    <<
+      func() (Attrib, error) {
+        // 1) nombre de la función
+        fnTok, ok := $0.(*token.Token)
+        if !ok {
+          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", $0)
+        }
+        name := string(fnTok.Lit)
 
+        // 2) recogemos el slice de argumentos
+        args, ok := $2.([]Attrib)
+        if !ok {
+          return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", $2)
+        }
+
+        // 3) comprobamos que la función exista
+        raw, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+        fs := raw.(semantics.FunctionStructure)
+
+        // 4) comprobamos número de argumentos
+        if len(args) != len(fs.Parameters) {
+          return nil, fmt.Errorf(
+            "error: función '%s' espera %d args, recibió %d",
+            name, len(fs.Parameters), len(args),
+          )
+        }
+
+        // 5) (Opcional) aquí podrías comparar tipos:
+        //    if fs.Parameters[i].Type != <tipo de args[i]> { … }
+
+        return $0, nil
+      }()
+    >>
+  ;
+
+/* FCallList: siempre devuelve un []Attrib (nunca nil) */
 FCallList
     : Expression FCallListTail
+      <<
+        func() (Attrib, error) {
+          first := $0.(Attrib)
+          tail, _ := $1.([]Attrib)
+          return append([]Attrib{first}, tail...), nil
+        }()
+      >>
     | "empty"
+      << []Attrib{}, nil >>
     ;
 
+/* FCallListTail: cola para concatenar más argumentos */
 FCallListTail
     : comma Expression FCallListTail
+      <<
+        func() (Attrib, error) {
+          arg := $1.(Attrib)
+          more, _ := $2.([]Attrib)
+          return append([]Attrib{arg}, more...), nil
+        }()
+      >>
     | "empty"
+      << []Attrib{}, nil >>
     ;

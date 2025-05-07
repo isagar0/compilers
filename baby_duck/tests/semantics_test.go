@@ -104,6 +104,28 @@ var testDataAccept = []*TI{
 	         }
 	         end`,
 	}, // Accept 7: Uso de variable en exprecion
+	{
+		`program funcionesLocales;
+		 var x : int;
+		 void foo()[
+		 var a : int;
+		 {
+			print(a);
+		 }
+		 ];
+		 void bar()[
+		 var a : float;
+		 {
+			print(a);
+			foo();
+		 }
+		 ];
+		 main {
+			bar();
+			print(x);
+		 }
+		 end`,
+	}, // Accept 8: Llamar funcion desde otra funcion
 }
 
 var testDataFail = []*TI{
@@ -217,6 +239,29 @@ var testDataFail = []*TI{
 		}
 		 end`,
 	}, // Fail 9: Nombre de funcion repetida
+	{
+		`program undeclaredCall;
+			main {
+				bar();
+			}
+			end`,
+	}, // Fail 10: llamada a función 'bar' no declarada
+	{
+		`program tooFewArgs;
+			void sum(a: int, b: float)[{}];
+			main {
+				sum(1);
+			}
+			end`,
+	}, // Fail 11: sum espera 2 args, recibe 1
+	{
+		`program diffType;
+			void sum(a: int, b: float)[{}];
+			main {
+				sum(1, 2);
+			}
+			end`,
+	}, // Fail 11: sum espera int float, recibe dos ints
 }
 
 func TestSemanticAccept(t *testing.T) {
