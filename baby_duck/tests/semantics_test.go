@@ -88,6 +88,22 @@ var testDataAccept = []*TI{
 	         }
 	         end`,
 	}, // Accept 6: Funcion con variables globales y locales
+	{
+		`program withFunc;
+			 var x : int;
+	         void sum(a: int, b: int)[
+	            var result: int;
+	            {
+	                result = a + b;
+	                print(result);
+	            }
+	         ];
+	         main {
+			 	x = 2;
+	            sum(x,3);
+	         }
+	         end`,
+	}, // Accept 7: Uso de variable en exprecion
 }
 
 var testDataFail = []*TI{
@@ -157,7 +173,50 @@ var testDataFail = []*TI{
 			print(x);
 		 }
 		 end`,
-	}, // Accept 5: Misma variable dentro de funcion
+	}, // Fail 5: Misma variable dentro de funcion
+	{
+		`program useUndecl;
+			main {
+				x = 5;
+			}
+			end`,
+	}, // Fail 6: Asignación a 'x' no declarada
+	{
+		`program useUndeclExpr;
+			var x: int;
+			main {
+				x = y;
+			}
+			end`,
+	}, // Fail 7: Uso de 'y' en expresión antes de declararla
+	{
+		`program funcUndecl;
+			void foo()[{
+				print(v);
+			}];
+			main {
+			}
+			end`,
+	}, // Fail 8: Dentro de foo, 'v' no declarada
+	{
+		`program repetirFun;
+		 void fun()[
+		 var a : int;
+		 {
+			print(a);
+		 }
+		 ];
+		 void fun()[
+		 var a : float;
+		 {
+			print(a);
+		 }
+		 ];
+		 main {
+			fun();
+		}
+		 end`,
+	}, // Fail 9: Nombre de funcion repetida
 }
 
 func TestSemanticAccept(t *testing.T) {

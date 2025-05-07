@@ -290,8 +290,18 @@ Statement
 
 /* ASSIGN */
 Assign
-    : id assign Expression semicolon
-    ;
+  : id assign Expression semicolon
+    << 
+      func() (Attrib, error) {
+        name := string($0.(*token.Token).Lit)
+        // reviso en el scope actual (local→global)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        return nil, nil
+      }()
+    >>
+  ;
 
 /* CONDITION */
 Condition
@@ -360,12 +370,22 @@ TermList
 
 /* FACTOR */
 Factor
-    : l_round_par Expression r_round_par
-    | Cte
-    | id
-    | add Factor
-    | rest Factor
-    ;
+  : l_round_par Expression r_round_par
+  | Cte
+  | id
+    <<
+      func() (Attrib, error) {
+        name := string($0.(*token.Token).Lit)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        // devolvemos el token para que la propia producción lo use en la AST
+        return $0, nil
+      }()
+    >>
+  | add Factor
+  | rest Factor
+  ;
 
 /* CTE */
 Cte

@@ -516,13 +516,27 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Assign : id assign Expression semicolon	<<  >>`,
+		String: `Assign : id assign Expression semicolon	<< func() (Attrib, error) {
+        name := string(X[0].(*token.Token).Lit)
+        // reviso en el scope actual (local→global)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        return nil, nil
+      }() >>`,
 		Id:         "Assign",
 		NTType:     16,
 		Index:      27,
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        name := string(X[0].(*token.Token).Lit)
+        // reviso en el scope actual (local→global)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
@@ -776,13 +790,27 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Factor : id	<<  >>`,
+		String: `Factor : id	<< func() (Attrib, error) {
+        name := string(X[0].(*token.Token).Lit)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        // devolvemos el token para que la propia producción lo use en la AST
+        return X[0], nil
+      }() >>`,
 		Id:         "Factor",
 		NTType:     29,
 		Index:      53,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        name := string(X[0].(*token.Token).Lit)
+        if _, exists := semantics.Current().Get(name); !exists {
+          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
+        // devolvemos el token para que la propia producción lo use en la AST
+        return X[0], nil
+      }()
 		},
 	},
 	ProdTabEntry{
