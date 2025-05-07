@@ -52,7 +52,7 @@ var testDataAccept = []*TI{
 				 print("hello");
 			 }
 			 end`,
-	}, // Accept 3: Programa sin variables o parametros
+	}, // Accept 3: Registro de función con parametros globales
 	{
 		`program prueba;
 			 void test()[
@@ -62,7 +62,7 @@ var testDataAccept = []*TI{
 
 			 }
 			 end`,
-	}, // Accept 4: Registro de función foo con parametros globales
+	}, // Accept 4: Programa sin variables o parametros
 	{
 		`program conParams;
 			 void paramsCheck(a: int, b: float)[
@@ -103,7 +103,7 @@ var testDataAccept = []*TI{
 	            sum(x,3);
 	         }
 	         end`,
-	}, // Accept 7: Uso de variable en exprecion
+	}, // Accept 7: Uso de variable en expresion
 	{
 		`program funcionesLocales;
 		 var x : int;
@@ -245,7 +245,7 @@ var testDataFail = []*TI{
 				bar();
 			}
 			end`,
-	}, // Fail 10: llamada a función 'bar' no declarada
+	}, // Fail 10: Llamada a función 'bar' no declarada
 	{
 		`program tooFewArgs;
 			void sum(a: int, b: float)[{}];
