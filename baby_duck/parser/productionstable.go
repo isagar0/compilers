@@ -4,6 +4,7 @@ package parser
 
 import (
     "fmt"
+    "strings"
     "baby_duck/semantics"
     "baby_duck/token"
   )
@@ -855,36 +856,67 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FCall : id l_round_par FCallList r_round_par semicolon	<< func() (Attrib, error) {
-        // 1) nombre de la función
+        // 1) Extraer nombre de la función
         fnTok, ok := X[0].(*token.Token)
         if !ok {
           return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
         }
         name := string(fnTok.Lit)
 
-        // 2) recogemos el slice de argumentos
+        // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
           return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
         }
 
-        // 3) comprobamos que la función exista
+        // 3) Comprobar que la función exista
         raw, exists := semantics.FunctionDirectory.Get(name)
         if !exists {
           return nil, fmt.Errorf("error: función '%s' no declarada", name)
         }
         fs := raw.(semantics.FunctionStructure)
 
-        // 4) comprobamos número de argumentos
+        // 4) Aridad correcta?
         if len(args) != len(fs.Parameters) {
           return nil, fmt.Errorf(
-            "error: función '%s' espera %d args, recibió %d",
+            "error: función '%s' espera %d argumentos, recibió %d",
             name, len(fs.Parameters), len(args),
           )
         }
 
-        // 5) (Opcional) aquí podrías comparar tipos:
-        //    if fs.Parameters[i].Type != <tipo de args[i]> { … }
+        // 5) Verificar tipo de cada argumento
+        for i, arg := range args {
+          var argType string
+
+          // 5a) Literal numérico
+          if tokArg, ok := arg.(*token.Token); ok {
+            lit := string(tokArg.Lit)
+            if strings.Contains(lit, ".") {
+              argType = "float"
+            } else {
+              argType = "int"
+            }
+          } else {
+            // 5b) Variable: buscar su tipo en el scope actual
+            varName := string(arg.(*token.Token).Lit)
+            rawVar, okVar := semantics.Current().Get(varName)
+            if okVar {
+              vs := rawVar.(semantics.VariableStructure)
+              argType = vs.Type
+            } else {
+              // si no está, el chequeo de existencia ya fallará en Assign/Factor
+              argType = "unknown"
+            }
+          }
+
+          expected := fs.Parameters[i].Type
+          if argType != expected {
+            return nil, fmt.Errorf(
+              "error: función '%s' espera %s en el parámetro %d, recibió %s",
+              name, expected, i+1, argType,
+            )
+          }
+        }
 
         return X[0], nil
       }() >>`,
@@ -894,36 +926,67 @@ var productionsTable = ProdTab{
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // 1) nombre de la función
+        // 1) Extraer nombre de la función
         fnTok, ok := X[0].(*token.Token)
         if !ok {
           return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
         }
         name := string(fnTok.Lit)
 
-        // 2) recogemos el slice de argumentos
+        // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
           return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
         }
 
-        // 3) comprobamos que la función exista
+        // 3) Comprobar que la función exista
         raw, exists := semantics.FunctionDirectory.Get(name)
         if !exists {
           return nil, fmt.Errorf("error: función '%s' no declarada", name)
         }
         fs := raw.(semantics.FunctionStructure)
 
-        // 4) comprobamos número de argumentos
+        // 4) Aridad correcta?
         if len(args) != len(fs.Parameters) {
           return nil, fmt.Errorf(
-            "error: función '%s' espera %d args, recibió %d",
+            "error: función '%s' espera %d argumentos, recibió %d",
             name, len(fs.Parameters), len(args),
           )
         }
 
-        // 5) (Opcional) aquí podrías comparar tipos:
-        //    if fs.Parameters[i].Type != <tipo de args[i]> { … }
+        // 5) Verificar tipo de cada argumento
+        for i, arg := range args {
+          var argType string
+
+          // 5a) Literal numérico
+          if tokArg, ok := arg.(*token.Token); ok {
+            lit := string(tokArg.Lit)
+            if strings.Contains(lit, ".") {
+              argType = "float"
+            } else {
+              argType = "int"
+            }
+          } else {
+            // 5b) Variable: buscar su tipo en el scope actual
+            varName := string(arg.(*token.Token).Lit)
+            rawVar, okVar := semantics.Current().Get(varName)
+            if okVar {
+              vs := rawVar.(semantics.VariableStructure)
+              argType = vs.Type
+            } else {
+              // si no está, el chequeo de existencia ya fallará en Assign/Factor
+              argType = "unknown"
+            }
+          }
+
+          expected := fs.Parameters[i].Type
+          if argType != expected {
+            return nil, fmt.Errorf(
+              "error: función '%s' espera %s en el parámetro %d, recibió %s",
+              name, expected, i+1, argType,
+            )
+          }
+        }
 
         return X[0], nil
       }()
