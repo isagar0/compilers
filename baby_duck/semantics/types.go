@@ -12,3 +12,11 @@ type FunctionStructure struct {
 	Parameters []VariableStructure
 	VarTable   *Dictionary
 }
+
+// Estructura de un Quad
+type QuadStructure struct {
+	Oper   string
+	Left   interface{}
+	Right  interface{}
+	Result interface{}
+}

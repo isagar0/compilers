@@ -5,6 +5,29 @@ import "fmt"
 var VarTable = NewDictionary()
 var FunctionDirectory = NewDictionary()
 
+// Pilas para cuadruplos
+var (
+	PilaO   = NewStack()
+	PTypes  = NewStack()
+	POper   = NewStack()
+	Quads   []QuadStructure
+	tempVar int
+)
+
+// ------------------------------------ Expreciones
+// Función auxiliar para generar temporales
+func newTemp() string {
+	tempVar++
+	return fmt.Sprintf("t%d", tempVar)
+}
+
+// PushQuad agrega un cuadruplo a la lista
+func PushQuad(oper string, left, right, res interface{}) {
+	Quads = append(Quads, QuadStructure{oper, left, right, res})
+}
+
+// ------------------------------------ Vars
+
 // Reset reinicia el scope global y limpia la pila de scopes locales.
 func Reset() {
 	scopes = &ScopeManager{
