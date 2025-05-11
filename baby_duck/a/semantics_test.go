@@ -1,4 +1,4 @@
-package tests
+package main
 
 import (
 	"baby_duck/lexer"

@@ -523,6 +523,10 @@ var productionsTable = ProdTab{
         if _, exists := semantics.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Imprimir stacks
+        semantics.PrintStacks()
+
         return nil, nil
       }() >>`,
 		Id:         "Assign",
@@ -536,6 +540,10 @@ var productionsTable = ProdTab{
         if _, exists := semantics.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Imprimir stacks
+        semantics.PrintStacks()
+
         return nil, nil
       }()
 		},
@@ -701,23 +709,35 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `ExpList : add Term ExpList	<<  >>`,
+		String: `ExpList : add Term ExpList	<< func() (Attrib, error) {
+          semantics.POper.Push("+")
+          return nil, nil
+        }() >>`,
 		Id:         "ExpList",
 		NTType:     26,
 		Index:      44,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          semantics.POper.Push("+")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `ExpList : rest Term ExpList	<<  >>`,
+		String: `ExpList : rest Term ExpList	<< func() (Attrib, error) {
+          semantics.POper.Push("-")
+          return nil, nil
+        }() >>`,
 		Id:         "ExpList",
 		NTType:     26,
 		Index:      45,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          semantics.POper.Push("-")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -741,23 +761,35 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `TermList : multiply Factor TermList	<<  >>`,
+		String: `TermList : multiply Factor TermList	<< func() (Attrib, error) {
+          semantics.POper.Push("*")
+          return nil, nil
+        }() >>`,
 		Id:         "TermList",
 		NTType:     28,
 		Index:      48,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          semantics.POper.Push("*")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `TermList : divide Factor TermList	<<  >>`,
+		String: `TermList : divide Factor TermList	<< func() (Attrib, error) {
+          semantics.POper.Push("/")
+          return nil, nil
+        }() >>`,
 		Id:         "TermList",
 		NTType:     28,
 		Index:      49,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          semantics.POper.Push("/")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -781,13 +813,43 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Factor : Cte	<<  >>`,
+		String: `Factor : Cte	<< func() (Attrib, error) {
+        cteToken := X[0].(*token.Token)
+        value := string(cteToken.Lit)
+
+        var tipo string
+        if strings.Contains(value, ".") {
+          tipo = "float"
+        } else {
+          tipo = "int"
+        }
+
+        semantics.PilaO.Push(value)
+        semantics.PTypes.Push(tipo)
+
+        return cteToken, nil
+      }() >>`,
 		Id:         "Factor",
 		NTType:     29,
 		Index:      52,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        cteToken := X[0].(*token.Token)
+        value := string(cteToken.Lit)
+
+        var tipo string
+        if strings.Contains(value, ".") {
+          tipo = "float"
+        } else {
+          tipo = "int"
+        }
+
+        semantics.PilaO.Push(value)
+        semantics.PTypes.Push(tipo)
+
+        return cteToken, nil
+      }()
 		},
 	},
 	ProdTabEntry{

@@ -15,6 +15,12 @@ var (
 )
 
 // ------------------------------------ Expreciones
+func PushOperandDebug(value interface{}, tipo string) {
+	fmt.Printf("→ PUSH OPERAND: %v (type: %s)\n", value, tipo)
+	PilaO.Push(value)
+	PTypes.Push(tipo)
+}
+
 // Función auxiliar para generar temporales
 func newTemp() string {
 	tempVar++
@@ -24,6 +30,69 @@ func newTemp() string {
 // PushQuad agrega un cuadruplo a la lista
 func PushQuad(oper string, left, right, res interface{}) {
 	Quads = append(Quads, QuadStructure{oper, left, right, res})
+}
+
+func PrintStacks() {
+	fmt.Println("Operandos:", PilaO.items)
+	fmt.Println("Tipos:", PTypes.items)
+	fmt.Print("Operadores: [")
+	for i := len(POper.items) - 1; i >= 0; i-- {
+		fmt.Print(POper.items[i], " ")
+	}
+	fmt.Println("]")
+}
+
+// PrintQuads imprime los cuadruplos con formato limpio
+func PrintQuads() {
+	fmt.Println("Cuádruplos generados:")
+	for i, q := range Quads {
+		fmt.Printf("%d: (%s %v %v %v)\n", i+1, q.Oper, q.Left, q.Right, q.Result)
+	}
+}
+
+// DoAddSub genera un cuadruplo si el tope de POper es + o -
+func DoAddSub() error {
+	top, err := POper.Peek()
+	if err != nil {
+		return nil // pila vacía, no hay nada que hacer
+	}
+
+	op, ok := top.(string)
+	if !ok || (op != "+" && op != "-") {
+		return nil // no es una operación de suma/resta
+	}
+
+	fmt.Println(">>> Antes de generar cuadruplo (+/-):")
+	fmt.Println("PilaO:", PilaO.items)
+	fmt.Println("PTypes:", PTypes.items)
+	fmt.Println("POper:", POper.items)
+
+	// Pop operandos y tipos
+	rightOp, _ := PilaO.Pop()
+	rightType, _ := PTypes.Pop()
+	fmt.Printf("→ rightOp: %v (type: %v)\n", rightOp, rightType)
+
+	leftOp, _ := PilaO.Pop()
+	leftType, _ := PTypes.Pop()
+	fmt.Printf("→ leftOp: %v (type: %v)\n", leftOp, leftType)
+
+	POper.Pop() // quita el operador
+
+	// Verificar tipo de resultado con el cubo semántico
+	resType, err := GetResultType(leftType.(string), rightType.(string), op)
+	if err != nil {
+		return err // tipo incompatible
+	}
+
+	// Crear temporal y cuadruplo
+	temp := newTemp()
+	PushQuad(op, leftOp, rightOp, temp)
+
+	// Apilar resultado temporal
+	PilaO.Push(temp)
+	PTypes.Push(resType)
+
+	return nil
 }
 
 // ------------------------------------ Vars

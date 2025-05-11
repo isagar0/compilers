@@ -299,6 +299,10 @@ Assign
         if _, exists := semantics.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Imprimir stacks
+        semantics.PrintStacks()
+
         return nil, nil
       }()
     >>
@@ -354,7 +358,19 @@ Exp
 
 ExpList
     : add Term ExpList
+      <<
+        func() (Attrib, error) {
+          semantics.POper.Push("+")
+          return nil, nil
+        }()
+      >>
     | rest Term ExpList
+      <<
+        func() (Attrib, error) {
+          semantics.POper.Push("-")
+          return nil, nil
+        }()
+      >>
     | "empty"
     ;
 
@@ -365,7 +381,19 @@ Term
 
 TermList
     : multiply Factor TermList
+      <<
+        func() (Attrib, error) {
+          semantics.POper.Push("*")
+          return nil, nil
+        }()
+      >>
     | divide Factor TermList
+      <<
+        func() (Attrib, error) {
+          semantics.POper.Push("/")
+          return nil, nil
+        }()
+      >>
     | "empty"
     ;
 
@@ -373,6 +401,24 @@ TermList
 Factor
   : l_round_par Expression r_round_par
   | Cte
+    <<
+      func() (Attrib, error) {
+        cteToken := $0.(*token.Token)
+        value := string(cteToken.Lit)
+
+        var tipo string
+        if strings.Contains(value, ".") {
+          tipo = "float"
+        } else {
+          tipo = "int"
+        }
+
+        semantics.PilaO.Push(value)
+        semantics.PTypes.Push(tipo)
+
+        return cteToken, nil
+      }()
+    >>
   | id
     <<
       func() (Attrib, error) {
