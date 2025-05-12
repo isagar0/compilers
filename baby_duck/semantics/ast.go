@@ -21,6 +21,11 @@ func PushOperandDebug(value interface{}, tipo string) {
 	PTypes.Push(tipo)
 }
 
+func PushOp(op string) {
+	fmt.Printf("→ PUSH OPERADOR: %s\n", op)
+	POper.Push(op)
+}
+
 // Función auxiliar para generar temporales
 func newTemp() string {
 	tempVar++
@@ -50,48 +55,59 @@ func PrintQuads() {
 	}
 }
 
-// DoAddSub genera un cuadruplo si el tope de POper es + o -
 func DoAddSub() error {
-	top, err := POper.Peek()
-	if err != nil {
-		return nil // pila vacía, no hay nada que hacer
+	fmt.Printf("→ ADENTRO DOADDSUB ANTES DEL FOR \n")
+	for {
+		fmt.Printf("→ ADENTRO DOADDSUB ADENTRO DEL FOR \n")
+
+		top, err := POper.Peek()
+
+		fmt.Printf("→ TOPE POper: %v (%T)\n", top, top)
+
+		if err != nil {
+			fmt.Printf("→ PILA VACIA \n")
+			return nil // pila vacía
+		}
+
+		op := top.(string)
+		if op != "+" && op != "-" {
+			fmt.Printf("→ NO OPERADOR DE SUMA/RESTA \n")
+			break // no es operador de suma/resta
+		}
+
+		// Sacar operandos y tipos
+		rightOp, _ := PilaO.Pop()
+		rightType, _ := PTypes.Pop()
+		fmt.Printf("→ rightOp: %v, rightType: %v\n", rightOp, rightType)
+
+		leftOp, _ := PilaO.Pop()
+		leftType, _ := PTypes.Pop()
+		fmt.Printf("→ leftOp: %v, leftType: %v\n", leftOp, leftType)
+
+		ltype, ok1 := leftType.(string)
+		rtype, ok2 := rightType.(string)
+		if !ok1 || !ok2 {
+			return fmt.Errorf("DoAddSub error: tipos no son string: left=%T, right=%T", leftType, rightType)
+		}
+
+		POper.Pop()
+
+		resType, err := GetResultType(ltype, rtype, op)
+		if err != nil {
+			fmt.Printf("→ ADENTRO DE IF ERR \n")
+			return err
+		}
+
+		fmt.Printf("→ ANTES DE GENERATE QUAD \n")
+
+		temp := newTemp()
+		PushQuad(op, leftOp, rightOp, temp)
+
+		PilaO.Push(temp)
+		PTypes.Push(resType)
+
+		fmt.Printf("→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 	}
-
-	op, ok := top.(string)
-	if !ok || (op != "+" && op != "-") {
-		return nil // no es una operación de suma/resta
-	}
-
-	fmt.Println(">>> Antes de generar cuadruplo (+/-):")
-	fmt.Println("PilaO:", PilaO.items)
-	fmt.Println("PTypes:", PTypes.items)
-	fmt.Println("POper:", POper.items)
-
-	// Pop operandos y tipos
-	rightOp, _ := PilaO.Pop()
-	rightType, _ := PTypes.Pop()
-	fmt.Printf("→ rightOp: %v (type: %v)\n", rightOp, rightType)
-
-	leftOp, _ := PilaO.Pop()
-	leftType, _ := PTypes.Pop()
-	fmt.Printf("→ leftOp: %v (type: %v)\n", leftOp, leftType)
-
-	POper.Pop() // quita el operador
-
-	// Verificar tipo de resultado con el cubo semántico
-	resType, err := GetResultType(leftType.(string), rightType.(string), op)
-	if err != nil {
-		return err // tipo incompatible
-	}
-
-	// Crear temporal y cuadruplo
-	temp := newTemp()
-	PushQuad(op, leftOp, rightOp, temp)
-
-	// Apilar resultado temporal
-	PilaO.Push(temp)
-	PTypes.Push(resType)
-
 	return nil
 }
 

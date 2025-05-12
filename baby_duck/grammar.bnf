@@ -300,8 +300,10 @@ Assign
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
-        // Imprimir stacks
+        // Imprimir stackss
+        semantics.PrintQuads()
         semantics.PrintStacks()
+        
 
         return nil, nil
       }()
@@ -342,7 +344,19 @@ PrintListTail
 /* EXPRESSION */
 Expression
     : Exp Operator Exp
+    <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          return nil, nil
+        }()
+      >>
     | Exp
+    <<
+      func() (Attrib, error) {
+        fmt.Println("→ RULE: Expression → Exp")
+        return nil, nil
+      }()
+    >>
     ;
 
 Operator
@@ -357,21 +371,47 @@ Exp
     ;
 
 ExpList
-    : add Term ExpList
+    : OperatorAdd Term ExpList
       <<
         func() (Attrib, error) {
-          semantics.POper.Push("+")
-          return nil, nil
-        }()
-      >>
-    | rest Term ExpList
-      <<
-        func() (Attrib, error) {
-          semantics.POper.Push("-")
+          fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
+          _ = semantics.DoAddSub()
           return nil, nil
         }()
       >>
     | "empty"
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: ExpList → ε")
+          _ = semantics.DoAddSub()
+          return nil, nil
+        }()
+      >>
+    ;
+
+OperatorAdd
+    : add
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: OperatorAdd → +")
+
+          // Antes de meter el nuevo operador,
+          // procesa si hay uno del mismo nivel (asociatividad izquierda)
+          semantics.DoAddSub()
+
+          semantics.PushOp("+")
+          return nil, nil
+        }()
+      >>
+    | rest
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: OperatorAdd → -")
+          semantics.DoAddSub()
+          semantics.PushOp("-")
+          return nil, nil
+        }()
+      >>
     ;
 
 /* TERM */
@@ -413,8 +453,7 @@ Factor
           tipo = "int"
         }
 
-        semantics.PilaO.Push(value)
-        semantics.PTypes.Push(tipo)
+        semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
       }()
