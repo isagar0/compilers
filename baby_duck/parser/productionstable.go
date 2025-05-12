@@ -654,7 +654,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Expression : Exp Operator Exp	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
           return nil, nil
         }() >>`,
 		Id:         "Expression",
@@ -663,14 +663,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
           return nil, nil
         }()
 		},
 	},
 	ProdTabEntry{
 		String: `Expression : Exp	<< func() (Attrib, error) {
-        fmt.Println("→ RULE: Expression → Exp")
+        //fmt.Println("→ RULE: Expression → Exp")
         return nil, nil
       }() >>`,
 		Id:         "Expression",
@@ -679,7 +679,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        fmt.Println("→ RULE: Expression → Exp")
+        //fmt.Println("→ RULE: Expression → Exp")
         return nil, nil
       }()
 		},
@@ -726,7 +726,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ExpList : OperatorAdd Term ExpList	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
+          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
           _ = semantics.DoAddSub()
           return nil, nil
         }() >>`,
@@ -736,7 +736,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
+          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -744,7 +744,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ExpList : "empty"	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: ExpList → ε")
+          //fmt.Println("→ RULE: ExpList → ε")
           _ = semantics.DoAddSub()
           return nil, nil
         }() >>`,
@@ -754,7 +754,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: ExpList → ε")
+          //fmt.Println("→ RULE: ExpList → ε")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -762,7 +762,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorAdd : add	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorAdd → +")
+          //fmt.Println("→ RULE: OperatorAdd → +")
 
           // Antes de meter el nuevo operador,
           // procesa si hay uno del mismo nivel (asociatividad izquierda)
@@ -777,7 +777,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorAdd → +")
+          //fmt.Println("→ RULE: OperatorAdd → +")
 
           // Antes de meter el nuevo operador,
           // procesa si hay uno del mismo nivel (asociatividad izquierda)
@@ -790,7 +790,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorAdd : rest	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorAdd → -")
+          //fmt.Println("→ RULE: OperatorAdd → -")
           semantics.DoAddSub()
           semantics.PushOp("-")
           return nil, nil
@@ -801,7 +801,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorAdd → -")
+          //fmt.Println("→ RULE: OperatorAdd → -")
           semantics.DoAddSub()
           semantics.PushOp("-")
           return nil, nil
@@ -820,7 +820,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `TermList : OperatorMul Factor TermList	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
+          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
           _ = semantics.DoMulDiv()
           return nil, nil
         }() >>`,
@@ -830,7 +830,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
+          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()
@@ -838,7 +838,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `TermList : "empty"	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: TermList → ε")
+          //fmt.Println("→ RULE: TermList → ε")
           _ = semantics.DoMulDiv()
           return nil, nil
         }() >>`,
@@ -848,7 +848,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: TermList → ε")
+          //fmt.Println("→ RULE: TermList → ε")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()
@@ -856,7 +856,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorMul : multiply	<< func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorMul → *")
+          //fmt.Println("→ RULE: OperatorMul → *")
           semantics.DoMulDiv()
           semantics.PushOp("*")
           return nil, nil
@@ -867,7 +867,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorMul → *")
+          //fmt.Println("→ RULE: OperatorMul → *")
           semantics.DoMulDiv()
           semantics.PushOp("*")
           return nil, nil

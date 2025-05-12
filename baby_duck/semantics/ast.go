@@ -16,13 +16,13 @@ var (
 
 // ------------------------------------ Expreciones
 func PushOperandDebug(value interface{}, tipo string) {
-	fmt.Printf("→ PUSH OPERAND: %v (type: %s)\n", value, tipo)
+	//fmt.Printf("→ PUSH OPERAND: %v (type: %s)\n", value, tipo)
 	PilaO.Push(value)
 	PTypes.Push(tipo)
 }
 
 func PushOp(op string) {
-	fmt.Printf("→ PUSH OPERADOR: %s\n", op)
+	//fmt.Printf("→ PUSH OPERADOR: %s\n", op)
 	POper.Push(op)
 }
 
@@ -38,7 +38,7 @@ func PushQuad(oper string, left, right, res interface{}) {
 }
 
 func PrintStacks() {
-	fmt.Println("Operandos:", PilaO.items)
+	fmt.Println("\nOperandos:", PilaO.items)
 	fmt.Println("Tipos:", PTypes.items)
 	fmt.Print("Operadores: [")
 	for i := len(POper.items) - 1; i >= 0; i-- {
@@ -49,56 +49,57 @@ func PrintStacks() {
 
 // PrintQuads imprime los cuadruplos con formato limpio
 func PrintQuads() {
-	fmt.Println("Cuádruplos generados:")
+	fmt.Println("\nCuádruplos generados:")
 	for i, q := range Quads {
 		fmt.Printf("%d: (%s %v %v %v)\n", i+1, q.Oper, q.Left, q.Right, q.Result)
 	}
 }
 
 func DoAddSub() error {
-	fmt.Printf("→ ADENTRO DOADDSUB ANTES DEL FOR \n")
+	//fmt.Printf("→ ADENTRO DOADDSUB ANTES DEL FOR \n")
 	for {
-		fmt.Printf("→ ADENTRO DOADDSUB ADENTRO DEL FOR \n")
+		PrintStacks()
+		//fmt.Printf("→ ADENTRO DOADDSUB ADENTRO DEL FOR \n")
 
 		top, err := POper.Peek()
 
-		fmt.Printf("→ TOPE POper: %v (%T)\n", top, top)
+		//fmt.Printf("→ TOPE POper: %v (%T)\n", top, top)
 
 		if err != nil {
-			fmt.Printf("→ PILA VACIA \n")
+			//fmt.Printf("→ PILA VACIA \n")
 			return nil // pila vacía
 		}
 
 		op := top.(string)
 		if op != "+" && op != "-" {
-			fmt.Printf("→ NO OPERADOR DE SUMA/RESTA \n")
+			//fmt.Printf("→ NO OPERADOR DE SUMA/RESTA \n")
 			break // no es operador de suma/resta
 		}
 
 		// Sacar operandos y tipos
 		rightOp, _ := PilaO.Pop()
 		rightType, _ := PTypes.Pop()
-		fmt.Printf("→ rightOp: %v, rightType: %v\n", rightOp, rightType)
+		//fmt.Printf("→ rightOp: %v, rightType: %v\n", rightOp, rightType)
 
 		leftOp, _ := PilaO.Pop()
 		leftType, _ := PTypes.Pop()
-		fmt.Printf("→ leftOp: %v, leftType: %v\n", leftOp, leftType)
+		//fmt.Printf("→ leftOp: %v, leftType: %v\n", leftOp, leftType)
 
 		ltype, ok1 := leftType.(string)
 		rtype, ok2 := rightType.(string)
 		if !ok1 || !ok2 {
-			return fmt.Errorf("DoAddSub error: tipos no son string: left=%T, right=%T", leftType, rightType)
+			return fmt.Errorf("\nDoAddSub error: tipos no son string: left=%T, right=%T", leftType, rightType)
 		}
 
 		POper.Pop()
 
 		resType, err := GetResultType(ltype, rtype, op)
 		if err != nil {
-			fmt.Printf("→ ADENTRO DE IF ERR \n")
+			//fmt.Printf("→ ADENTRO DE IF ERR \n")
 			return err
 		}
 
-		fmt.Printf("→ ANTES DE GENERATE QUAD \n")
+		//fmt.Printf("→ ANTES DE GENERATE QUAD \n")
 
 		temp := newTemp()
 		PushQuad(op, leftOp, rightOp, temp)
@@ -106,13 +107,15 @@ func DoAddSub() error {
 		PilaO.Push(temp)
 		PTypes.Push(resType)
 
-		fmt.Printf("→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+		fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 	}
 	return nil
 }
 
 func DoMulDiv() error {
 	for {
+		PrintStacks()
+
 		top, err := POper.Peek()
 		if err != nil {
 			return nil // pila vacía
@@ -147,7 +150,7 @@ func DoMulDiv() error {
 		PilaO.Push(temp)
 		PTypes.Push(resType)
 
-		fmt.Printf("→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+		fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 	}
 	return nil
 }
