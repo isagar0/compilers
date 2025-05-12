@@ -5,6 +5,7 @@ import (
 
 	"baby_duck/lexer"
 	"baby_duck/parser"
+	"baby_duck/semantics"
 )
 
 type TI struct {
@@ -258,6 +259,9 @@ var testDataFail = []*TI{
 func TestParserAccept(t *testing.T) {
 	p := parser.NewParser()
 	for i, ts := range testDataAccept {
+		// Reiniciamos semántica antes de empezar
+		semantics.ResetSemanticState()
+
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
 		if err != nil {
@@ -269,6 +273,9 @@ func TestParserAccept(t *testing.T) {
 func TestParserFail(t *testing.T) {
 	p := parser.NewParser()
 	for i, ts := range testDataFail {
+		// Reiniciamos semántica antes de empezar
+		semantics.ResetSemanticState()
+
 		s := lexer.NewLexer([]byte(ts.src))
 		_, err := p.Parse(s)
 		if err == nil {

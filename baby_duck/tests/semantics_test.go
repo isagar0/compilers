@@ -1,18 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"testing"
+
 	"baby_duck/lexer"
 	"baby_duck/parser"
 	"baby_duck/semantics"
-	"fmt"
-	"testing"
 )
 
-type TI struct {
-	src string
-}
-
-var testDataAccept = []*TI{
+var testDataAccept2 = []*TI{
 	{
 		`program ejemplo1;
 			var x : int;
@@ -128,7 +125,7 @@ var testDataAccept = []*TI{
 	}, // Accept 8: Llamar funcion desde otra funcion
 }
 
-var testDataFail = []*TI{
+var testDataFail2 = []*TI{
 	{
 		`program dupVar;
 			 var x: int;
@@ -264,9 +261,9 @@ var testDataFail = []*TI{
 	}, // Fail 11: sum espera int float, recibe dos ints
 }
 
-func TestSemanticAccept(t *testing.T) {
+func TestSemanticAccept2(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range testDataAccept {
+	for i, ts := range testDataAccept2 {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 
@@ -293,9 +290,9 @@ func TestSemanticAccept(t *testing.T) {
 	}
 }
 
-func TestSemanticFail(t *testing.T) {
+func TestSemanticFail2(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range testDataFail {
+	for i, ts := range testDataFail2 {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 
