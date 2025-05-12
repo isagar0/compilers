@@ -111,6 +111,47 @@ func DoAddSub() error {
 	return nil
 }
 
+func DoMulDiv() error {
+	for {
+		top, err := POper.Peek()
+		if err != nil {
+			return nil // pila vacía
+		}
+
+		op := top.(string)
+		if op != "*" && op != "/" {
+			break // no es operador de mul/div
+		}
+
+		rightOp, _ := PilaO.Pop()
+		rightType, _ := PTypes.Pop()
+		leftOp, _ := PilaO.Pop()
+		leftType, _ := PTypes.Pop()
+
+		ltype, ok1 := leftType.(string)
+		rtype, ok2 := rightType.(string)
+		if !ok1 || !ok2 {
+			return fmt.Errorf("DoMulDiv error: tipos no son string: left=%T, right=%T", leftType, rightType)
+		}
+
+		POper.Pop()
+
+		resType, err := GetResultType(ltype, rtype, op)
+		if err != nil {
+			return err
+		}
+
+		temp := newTemp()
+		PushQuad(op, leftOp, rightOp, temp)
+
+		PilaO.Push(temp)
+		PTypes.Push(resType)
+
+		fmt.Printf("→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+	}
+	return nil
+}
+
 // ------------------------------------ Vars
 
 // Reset reinicia el scope global y limpia la pila de scopes locales.

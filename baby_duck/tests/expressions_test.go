@@ -17,7 +17,7 @@ var testDataAccept = []*TI{
 
 		var x : int;
 		main {
-		x = 5 + 3 - 1 + 6 + 9 - 9 - -3 + 2;
+		x = 5 + 3 * 2 * 1 - 1 / 7 ;
 		}
 		end`,
 	}, // Accept 1:
