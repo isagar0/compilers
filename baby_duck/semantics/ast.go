@@ -2,7 +2,7 @@ package semantics
 
 import "fmt"
 
-// -------------------------------- Inicialización --------------------------------
+// --------------------------------------- Inicialización ---------------------------------------
 var VarTable = NewDictionary()          // Tabla global de variables
 var FunctionDirectory = NewDictionary() // Directorio de funciones
 
@@ -14,7 +14,7 @@ var (
 	tempVar int             // Contador para nombres de variables temporales
 )
 
-// -------------------------------- Quads --------------------------------
+// -------------------------------------------- Quads --------------------------------------------
 // PushOperandDebug: En lugar de haer push directo lo hace desde acá para debuggear
 func PushOperandDebug(value interface{}, tipo string) {
 	//fmt.Printf("→ PUSH OPERAND: %v (type: %s)\n", value, tipo)
@@ -282,7 +282,7 @@ func PopUntilFakeBottom() error {
 	return nil
 }
 
-// -------------------------------- Vars --------------------------------
+// -------------------------------------------- Vars --------------------------------------------
 // Reset: Crea una nuvea tabla global y sus scopes vacios
 func Reset() {
 	scopes = &ScopeManager{
