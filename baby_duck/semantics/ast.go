@@ -155,6 +155,38 @@ func DoMulDiv() error {
 	return nil
 }
 
+func PopUntilFakeBottom() error {
+	for {
+		top, err := POper.Peek()
+		if err != nil {
+			break
+		}
+
+		op := top.(string)
+		if op == "⏊" {
+			POper.Pop() // quitamos la marca
+			fmt.Println("→ POP OPERADOR: ⏊ (fin de paréntesis)")
+			break
+		}
+
+		// decidir si es +, -, *, /
+		if op == "+" || op == "-" {
+			err := DoAddSub()
+			if err != nil {
+				return err
+			}
+		} else if op == "*" || op == "/" {
+			err := DoMulDiv()
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("operador inesperado en paréntesis: %v", op)
+		}
+	}
+	return nil
+}
+
 // ------------------------------------ Vars
 
 // Reset reinicia el scope global y limpia la pila de scopes locales.

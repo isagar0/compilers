@@ -895,7 +895,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Factor : l_round_par Expression r_round_par	<<  >>`,
+		String: `Factor : FakeBottom Expression CloseParen	<<  >>`,
 		Id:         "Factor",
 		NTType:     31,
 		Index:      53,
@@ -987,10 +987,44 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Cte : cte_int	<<  >>`,
-		Id:         "Cte",
+		String: `FakeBottom : l_round_par	<< func() (Attrib, error) {
+        semantics.PushOp("⏊")
+        fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
+        return nil, nil
+      }() >>`,
+		Id:         "FakeBottom",
 		NTType:     32,
 		Index:      58,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return func() (Attrib, error) {
+        semantics.PushOp("⏊")
+        fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
+        return nil, nil
+      }()
+		},
+	},
+	ProdTabEntry{
+		String: `CloseParen : r_round_par	<< func() (Attrib, error) {
+        err := semantics.PopUntilFakeBottom()
+        return nil, err
+      }() >>`,
+		Id:         "CloseParen",
+		NTType:     33,
+		Index:      59,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return func() (Attrib, error) {
+        err := semantics.PopUntilFakeBottom()
+        return nil, err
+      }()
+		},
+	},
+	ProdTabEntry{
+		String: `Cte : cte_int	<<  >>`,
+		Id:         "Cte",
+		NTType:     34,
+		Index:      60,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -999,8 +1033,8 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Cte : cte_float	<<  >>`,
 		Id:         "Cte",
-		NTType:     32,
-		Index:      59,
+		NTType:     34,
+		Index:      61,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -1073,8 +1107,8 @@ var productionsTable = ProdTab{
         return X[0], nil
       }() >>`,
 		Id:         "FCall",
-		NTType:     33,
-		Index:      60,
+		NTType:     35,
+		Index:      62,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
@@ -1151,8 +1185,8 @@ var productionsTable = ProdTab{
           return append([]Attrib{first}, tail...), nil
         }() >>`,
 		Id:         "FCallList",
-		NTType:     34,
-		Index:      61,
+		NTType:     36,
+		Index:      63,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
@@ -1165,8 +1199,8 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `FCallList : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallList",
-		NTType:     34,
-		Index:      62,
+		NTType:     36,
+		Index:      64,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return []Attrib{}, nil
@@ -1179,8 +1213,8 @@ var productionsTable = ProdTab{
           return append([]Attrib{arg}, more...), nil
         }() >>`,
 		Id:         "FCallListTail",
-		NTType:     35,
-		Index:      63,
+		NTType:     37,
+		Index:      65,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
@@ -1193,8 +1227,8 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `FCallListTail : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallListTail",
-		NTType:     35,
-		Index:      64,
+		NTType:     37,
+		Index:      66,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return []Attrib{}, nil

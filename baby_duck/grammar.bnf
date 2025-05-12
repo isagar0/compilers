@@ -461,7 +461,7 @@ OperatorMul
 
 /* FACTOR */
 Factor
-  : l_round_par Expression r_round_par
+  : FakeBottom Expression CloseParen
   | Cte
     <<
       func() (Attrib, error) {
@@ -493,6 +493,27 @@ Factor
     >>
   | add Factor
   | rest Factor
+  ;
+
+FakeBottom
+  : l_round_par
+    <<
+      func() (Attrib, error) {
+        semantics.PushOp("⏊")
+        fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
+        return nil, nil
+      }()
+    >>
+  ;
+
+CloseParen
+  : r_round_par
+    <<
+      func() (Attrib, error) {
+        err := semantics.PopUntilFakeBottom()
+        return nil, err
+      }()
+    >>
   ;
 
 /* CTE */
