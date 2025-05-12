@@ -1,48 +1,43 @@
 package semantics
 
-// scope.go
-//import "fmt"
-
-// ScopeManager maneja la tabla global y una pila de scopes locales
+// ScopeManager: Maneja la tabla global y una pila de scopes locales
 type ScopeManager struct {
-	global *Dictionary
-	stack  []*Dictionary
+	global *Dictionary   // Scope global
+	stack  []*Dictionary // Pila scopes locales
 }
 
-// instancia única
+// scopes: Instancia global
 var scopes = &ScopeManager{
 	global: NewDictionary(),
 	stack:  []*Dictionary{},
 }
 
-// Current devuelve la tabla activa (local o global)
+// Current: Devuelve la tabla activa (local o global)
 func Current() *Dictionary {
+	// Si no hay scopes locales activos, retorna el scope global.
 	if len(scopes.stack) == 0 {
 		return scopes.global
 	}
-	return scopes.stack[len(scopes.stack)-1]
+	return scopes.stack[len(scopes.stack)-1] // último scope en la pila
 }
 
-// EnterScope abre un nuevo scope local
+// EnterScope: Crea y abre un nuevo scope local
 func EnterScope() {
-	child := NewDictionary()
-	child.parent = scopes.global
-	scopes.stack = append(scopes.stack, child)
+	child := NewDictionary()                   // Crea tabla de simbolos
+	child.parent = scopes.global               //Asigna el scope global como el padre
+	scopes.stack = append(scopes.stack, child) // Lo agrega a la pila de scopes
+
 	/*fmt.Printf("[DEBUG] EnterScope → new local scope %p (parent %p), depth=%d\n",
 	child, child.parent, len(scopes.stack))*/
 }
 
-// ExitScope cierra el scope local actual
+// ExitScope: Cierra el scope local actual
 func ExitScope() {
+	// No hay scopes locales que cerrar
 	if len(scopes.stack) == 0 {
 		// nada que cerrar
 		return
 	}
-	// 1) capturamos la tabla que vamos a sacar
-	/*popped := scopes.stack[len(scopes.stack)-1]
-	// 2) la quitamos de la pila
+
 	scopes.stack = scopes.stack[:len(scopes.stack)-1]
-	// 3) imprimimos el debug con el nuevo depth y el Current()
-	fmt.Printf("[DEBUG] ExitScope  → popped scope %p, new depth=%d, current=%p\n",
-		popped, len(scopes.stack), Current())*/
 }

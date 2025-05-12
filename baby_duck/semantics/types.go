@@ -1,22 +1,22 @@
 package semantics
 
-// Estructura de una variable
+// VariableStructure: Estructura de una variable
 type VariableStructure struct {
-	Name string
-	Type string
+	Name string // Nombre
+	Type string // Tipo
 }
 
-// Estructura de una función
+// FunctionStructure: Estructura de una función
 type FunctionStructure struct {
-	Name       string
-	Parameters []VariableStructure
-	VarTable   *Dictionary
+	Name       string              // Nombre
+	Parameters []VariableStructure // Lista de parametros
+	VarTable   *Dictionary         // Variables locales (scope local)
 }
 
-// Estructura de un Quad
+// QuadStructure: Estructura de un Quad
 type QuadStructure struct {
-	Oper   string
-	Left   interface{}
-	Right  interface{}
-	Result interface{}
+	Oper   string      // Operador
+	Left   interface{} // Operando izquierdo
+	Right  interface{} // Operando derecho
+	Result interface{} // Resultado
 }
