@@ -17,7 +17,7 @@ var (
 // -------------------------------------------- Quads --------------------------------------------
 // PushOperandDebug: En lugar de haer push directo lo hace desde acá para debuggear
 func PushOperandDebug(value interface{}, tipo string) {
-	//fmt.Printf("→ PUSH OPERAND: %v (type: %s)\n", value, tipo)
+	fmt.Printf("→ DEBUG PushOperand: pushing type: %T = %v\n", tipo, tipo)
 	PilaO.Push(value)
 	PTypes.Push(tipo)
 }
@@ -62,7 +62,7 @@ func PrintQuads() {
 func DoAddSub() error {
 	for {
 		// Imprime estado de las pilas
-		PrintStacks()
+		// PrintStacks()
 
 		// Verifica el tope, si esta vacía termina el ciclo
 		top, err := POper.Peek()
@@ -125,7 +125,7 @@ func DoAddSub() error {
 func DoMulDiv() error {
 	for {
 		// Imprime estado de las pilas
-		PrintStacks()
+		// PrintStacks()
 
 		// Verifica el tope, si esta vacía termina el ciclo
 		top, err := POper.Peek()
@@ -149,6 +149,8 @@ func DoMulDiv() error {
 		// Izquierdo
 		leftOp, _ := PilaO.Pop()
 		leftType, _ := PTypes.Pop()
+
+		fmt.Printf("→ DEBUG DoMulDiv: leftType=%T(%v), rightType=%T(%v)\n", leftType, leftType, rightType, rightType)
 
 		// Convertir a string y mandar error si no son de ese tipo
 		ltype, ok1 := leftType.(string)
@@ -185,7 +187,7 @@ func DoMulDiv() error {
 // DoRelational: Genera cuádruplos para operadores relacionales <, >, !=
 func DoRelational() error {
 	// Imprime estado de las pilas
-	PrintStacks()
+	// PrintStacks()
 
 	// Verifica el tope, si esta vacía termina el ciclo
 	top, err := POper.Peek()

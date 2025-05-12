@@ -57,7 +57,6 @@ r_square_par : ']' ;
 <<
   import (
     "fmt"
-    "strings"
     "baby_duck/semantics"
     "baby_duck/token"
   )
@@ -291,36 +290,12 @@ Statement
 
 /* ASSIGN */
 Assign
-  : id assign Expression semicolon
-    << 
-      func() (Attrib, error) {
-        name := string($0.(*token.Token).Lit)
-        // reviso en el scope actual (local→global)
-        if _, exists := semantics.Current().Get(name); !exists {
-          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
-        }
-
-        // Imprimir stackss
-        semantics.PrintQuads()
-        //semantics.PrintStacks()
-        
-
-        return nil, nil
-      }()
-    >>
-  ;
+    : id assign Expression semicolon
+    ;
 
 /* CONDITION */
 Condition
     : if l_round_par Expression r_round_par Body Else semicolon
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: Condition (if)")
-          //semantics.PrintStacks()
-          semantics.PrintQuads() 
-          return nil, nil
-        }()
-      >>
     ;
 
 Else
@@ -331,14 +306,6 @@ Else
 /* CYCLE */
 Cycle
     : while l_round_par Expression r_round_par do Body semicolon
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: Cycle (while)")
-          //semantics.PrintStacks()
-          semantics.PrintQuads()
-          return nil, nil
-        }()
-      >>
     ;
 
 /* PRINT */
@@ -360,47 +327,13 @@ PrintListTail
 /* EXPRESSION */
 Expression
     : Exp Operator Exp
-    <<
-        func() (Attrib, error) {
-          fmt.Println("→ DEBUG Expression → Exp Operator Exp")
-          _ = semantics.DoRelational()
-          return nil, nil
-        }()
-      >>
     | Exp
-    <<
-      func() (Attrib, error) {
-        fmt.Println("→ RULE: Expression → Exp")
-        return $0, nil
-      }()
-    >>
     ;
 
 Operator
     : less_than
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → >")
-          semantics.PushOp(">")
-          return nil, nil
-        }()
-      >>
     | more_than
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → <")
-          semantics.PushOp("<")
-          return nil, nil
-        }()
-      >>
     | not_equal
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → !=")
-          semantics.PushOp("!=")
-          return nil, nil
-        }()
-      >>
     ;
 
 /* EXP */
@@ -409,47 +342,9 @@ Exp
     ;
 
 ExpList
-    : OperatorAdd Term ExpList
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
-          _ = semantics.DoAddSub()
-          return nil, nil
-        }()
-      >>
+    : add Term ExpList
+    | rest Term ExpList
     | "empty"
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → ε")
-          _ = semantics.DoAddSub()
-          return nil, nil
-        }()
-      >>
-    ;
-
-OperatorAdd
-    : add
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → +")
-
-          // Antes de meter el nuevo operador,
-          // procesa si hay uno del mismo nivel (asociatividad izquierda)
-          semantics.DoAddSub()
-
-          semantics.PushOp("+")
-          return nil, nil
-        }()
-      >>
-    | rest
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → -")
-          semantics.DoAddSub()
-          semantics.PushOp("-")
-          return nil, nil
-        }()
-      >>
     ;
 
 /* TERM */
@@ -458,108 +353,19 @@ Term
     ;
 
 TermList
-    : OperatorMul Factor TermList
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
-          _ = semantics.DoMulDiv()
-          return nil, nil
-        }()
-      >>
+    : multiply Factor TermList
+    | divide Factor TermList
     | "empty"
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → ε")
-          _ = semantics.DoMulDiv()
-          return nil, nil
-        }()
-      >>
-    ;
-
-OperatorMul
-    : multiply
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → *")
-          semantics.DoMulDiv()
-          semantics.PushOp("*")
-          return nil, nil
-        }()
-      >>
-    | divide
-      <<
-        func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorMul → /")
-          semantics.DoMulDiv()
-          semantics.PushOp("/")
-          return nil, nil
-        }()
-      >>
     ;
 
 /* FACTOR */
 Factor
-  : FakeBottom Expression CloseParen
-  | Cte
-    <<
-      func() (Attrib, error) {
-        cteToken := $0.(*token.Token)
-        value := string(cteToken.Lit)
-
-        var tipo string
-        if strings.Contains(value, ".") {
-          tipo = "float"
-        } else {
-          tipo = "int"
-        }
-
-        semantics.PushOperandDebug(value, tipo)
-
-        return cteToken, nil
-      }()
-    >>
-  | id
-    <<
-      func() (Attrib, error) {
-        name := string($0.(*token.Token).Lit)
-        fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
-
-        raw, exists := semantics.Current().Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
-        }
-
-        vs := raw.(semantics.VariableStructure)
-        semantics.PushOperandDebug(name, vs.Type)
-
-        // devolvemos el token para que la propia producción lo use en la AST
-        return $0, nil
-      }()
-    >>
-  | add Factor
-  | rest Factor
-  ;
-
-FakeBottom
-  : l_round_par
-    <<
-      func() (Attrib, error) {
-        semantics.PushOp("⏊")
-        fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
-        return nil, nil
-      }()
-    >>
-  ;
-
-CloseParen
-  : r_round_par
-    <<
-      func() (Attrib, error) {
-        err := semantics.PopUntilFakeBottom()
-        return nil, err
-      }()
-    >>
-  ;
+    : l_round_par Expression r_round_par
+    | Cte
+    | id
+    | add Factor
+    | rest Factor
+    ;
 
 /* CTE */
 Cte
@@ -569,115 +375,16 @@ Cte
 
 
 /* F_CALL */
-/* F_CALL */
-/* F_CALL */
 FCall
-  : id l_round_par FCallList r_round_par semicolon
-    <<
-      func() (Attrib, error) {
-        // 1) Extraer nombre de la función
-        fnTok, ok := $0.(*token.Token)
-        if !ok {
-          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", $0)
-        }
-        name := string(fnTok.Lit)
-
-        // 2) Recuperar slice de argumentos
-        args, ok := $2.([]Attrib)
-        if !ok {
-          return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", $2)
-        }
-
-        // 3) Comprobar que la función exista
-        raw, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-        fs := raw.(semantics.FunctionStructure)
-
-        // 4) Aridad correcta?
-        if len(args) != len(fs.Parameters) {
-          return nil, fmt.Errorf(
-            "error: función '%s' espera %d argumentos, recibió %d",
-            name, len(fs.Parameters), len(args),
-          )
-        }
-
-        // 5) Verificar tipo de cada argumento
-        for i, arg := range args {
-          var argType string
-
-          // 5a) Literal numérico
-          if tokArg, ok := arg.(*token.Token); ok {
-            lit := string(tokArg.Lit)
-            if strings.Contains(lit, ".") {
-              argType = "float"
-            } else {
-              argType = "int"
-            }
-          } else {
-            // 5b) Variable: buscar su tipo en el scope actual
-            varName := string(arg.(*token.Token).Lit)
-            rawVar, okVar := semantics.Current().Get(varName)
-            if okVar {
-              vs := rawVar.(semantics.VariableStructure)
-              argType = vs.Type
-            } else {
-              // si no está, el chequeo de existencia ya fallará en Assign/Factor
-              argType = "unknown"
-            }
-          }
-
-          expected := fs.Parameters[i].Type
-          if argType != expected {
-            return nil, fmt.Errorf(
-              "error: función '%s' espera %s en el parámetro %d, recibió %s",
-              name, expected, i+1, argType,
-            )
-          }
-        }
-
-        return $0, nil
-      }()
-    >>
-  ;
-
-/* FCallList: siempre devuelve un []Attrib (nunca nil) */
-FCallList
-    : Expression FCallListTail
-      <<
-        func() (Attrib, error) {
-          first := $0.(Attrib)
-          tail, _ := $1.([]Attrib)
-          return append([]Attrib{first}, tail...), nil
-        }()
-      >>
-    | "empty"
-      << []Attrib{}, nil >>
+    : id l_round_par FCallList r_round_par semicolon
     ;
 
-/* FCallListTail: cola para concatenar más argumentos */
+FCallList
+    : Expression FCallListTail
+    | "empty"
+    ;
+
 FCallListTail
     : comma Expression FCallListTail
-      <<
-        func() (Attrib, error) {
-          fmt.Printf("→ DEBUG FCallListTail: $1=%T (%v), $2=%T (%v)\n", $1, $1, $2, $2)
-          if $1 == nil {
-          return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
-          }
-
-          arg := $1.(Attrib)
-
-          var more []Attrib
-          if $2 != nil {
-            more = $2.([]Attrib)
-          } else {
-            more = []Attrib{}
-          }
-
-          return append([]Attrib{arg}, more...), nil
-        }()
-      >>
     | "empty"
-      << []Attrib{}, nil >>
     ;

@@ -526,7 +526,7 @@ var productionsTable = ProdTab{
 
         // Imprimir stackss
         semantics.PrintQuads()
-        semantics.PrintStacks()
+        //semantics.PrintStacks()
         
 
         return nil, nil
@@ -545,7 +545,7 @@ var productionsTable = ProdTab{
 
         // Imprimir stackss
         semantics.PrintQuads()
-        semantics.PrintStacks()
+        //semantics.PrintStacks()
         
 
         return nil, nil
@@ -555,7 +555,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Condition : if l_round_par Expression r_round_par Body Else semicolon	<< func() (Attrib, error) {
           fmt.Println("→ RULE: Condition (if)")
-          semantics.PrintStacks()
+          //semantics.PrintStacks()
           semantics.PrintQuads() 
           return nil, nil
         }() >>`,
@@ -566,7 +566,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           fmt.Println("→ RULE: Condition (if)")
-          semantics.PrintStacks()
+          //semantics.PrintStacks()
           semantics.PrintQuads() 
           return nil, nil
         }()
@@ -595,7 +595,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Cycle : while l_round_par Expression r_round_par do Body semicolon	<< func() (Attrib, error) {
           fmt.Println("→ RULE: Cycle (while)")
-          semantics.PrintStacks()
+          //semantics.PrintStacks()
           semantics.PrintQuads()
           return nil, nil
         }() >>`,
@@ -606,7 +606,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           fmt.Println("→ RULE: Cycle (while)")
-          semantics.PrintStacks()
+          //semantics.PrintStacks()
           semantics.PrintQuads()
           return nil, nil
         }()
@@ -674,7 +674,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Expression : Exp Operator Exp	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          fmt.Println("→ DEBUG Expression → Exp Operator Exp")
           _ = semantics.DoRelational()
           return nil, nil
         }() >>`,
@@ -684,7 +684,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          fmt.Println("→ DEBUG Expression → Exp Operator Exp")
           _ = semantics.DoRelational()
           return nil, nil
         }()
@@ -692,8 +692,8 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Expression : Exp	<< func() (Attrib, error) {
-        //fmt.Println("→ RULE: Expression → Exp")
-        return nil, nil
+        fmt.Println("→ RULE: Expression → Exp")
+        return X[0], nil
       }() >>`,
 		Id:         "Expression",
 		NTType:     23,
@@ -701,8 +701,8 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        //fmt.Println("→ RULE: Expression → Exp")
-        return nil, nil
+        fmt.Println("→ RULE: Expression → Exp")
+        return X[0], nil
       }()
 		},
 	},
@@ -991,9 +991,16 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Factor : id	<< func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
-        if _, exists := semantics.Current().Get(name); !exists {
+        fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
+
+        raw, exists := semantics.Current().Get(name)
+        if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        vs := raw.(semantics.VariableStructure)
+        semantics.PushOperandDebug(name, vs.Type)
+
         // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil
       }() >>`,
@@ -1004,9 +1011,16 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
-        if _, exists := semantics.Current().Get(name); !exists {
+        fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
+
+        raw, exists := semantics.Current().Get(name)
+        if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        vs := raw.(semantics.VariableStructure)
+        semantics.PushOperandDebug(name, vs.Type)
+
         // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil
       }()
@@ -1254,8 +1268,20 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FCallListTail : comma Expression FCallListTail	<< func() (Attrib, error) {
+          fmt.Printf("→ DEBUG FCallListTail: X[1]=%T (%v), X[2]=%T (%v)\n", X[1], X[1], X[2], X[2])
+          if X[1] == nil {
+          return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
+          }
+
           arg := X[1].(Attrib)
-          more, _ := X[2].([]Attrib)
+
+          var more []Attrib
+          if X[2] != nil {
+            more = X[2].([]Attrib)
+          } else {
+            more = []Attrib{}
+          }
+
           return append([]Attrib{arg}, more...), nil
         }() >>`,
 		Id:         "FCallListTail",
@@ -1264,8 +1290,20 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
+          fmt.Printf("→ DEBUG FCallListTail: X[1]=%T (%v), X[2]=%T (%v)\n", X[1], X[1], X[2], X[2])
+          if X[1] == nil {
+          return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
+          }
+
           arg := X[1].(Attrib)
-          more, _ := X[2].([]Attrib)
+
+          var more []Attrib
+          if X[2] != nil {
+            more = X[2].([]Attrib)
+          } else {
+            more = []Attrib{}
+          }
+
           return append([]Attrib{arg}, more...), nil
         }()
 		},
