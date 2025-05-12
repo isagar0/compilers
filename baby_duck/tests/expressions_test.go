@@ -13,13 +13,15 @@ type TI struct {
 
 var testDataAccept = []*TI{
 	{
-		`program Test;
-
-		var x : int;
-		main {
-		x = (2 + 3) * 4 * (4 + 1 * 5);
-		}
-		end`,
+		`program simple;
+         var a: float;
+         main {
+            a = (1 + 2) * 3.5;
+            if (a + 1 > 5 * 3) {
+                print(a);
+            };
+         }
+         end`,
 	}, // Accept 1:
 }
 

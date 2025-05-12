@@ -313,6 +313,14 @@ Assign
 /* CONDITION */
 Condition
     : if l_round_par Expression r_round_par Body Else semicolon
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Condition (if)")
+          semantics.PrintStacks()
+          semantics.PrintQuads() 
+          return nil, nil
+        }()
+      >>
     ;
 
 Else
@@ -323,6 +331,14 @@ Else
 /* CYCLE */
 Cycle
     : while l_round_par Expression r_round_par do Body semicolon
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Cycle (while)")
+          semantics.PrintStacks()
+          semantics.PrintQuads()
+          return nil, nil
+        }()
+      >>
     ;
 
 /* PRINT */
@@ -347,6 +363,7 @@ Expression
     <<
         func() (Attrib, error) {
           //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          _ = semantics.DoRelational()
           return nil, nil
         }()
       >>
@@ -361,8 +378,29 @@ Expression
 
 Operator
     : less_than
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → >")
+          semantics.PushOp(">")
+          return nil, nil
+        }()
+      >>
     | more_than
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → <")
+          semantics.PushOp("<")
+          return nil, nil
+        }()
+      >>
     | not_equal
+      <<
+        func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → !=")
+          semantics.PushOp("!=")
+          return nil, nil
+        }()
+      >>
     ;
 
 /* EXP */

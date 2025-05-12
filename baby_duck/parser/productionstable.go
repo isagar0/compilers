@@ -553,13 +553,23 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Condition : if l_round_par Expression r_round_par Body Else semicolon	<<  >>`,
+		String: `Condition : if l_round_par Expression r_round_par Body Else semicolon	<< func() (Attrib, error) {
+          fmt.Println("→ RULE: Condition (if)")
+          semantics.PrintStacks()
+          semantics.PrintQuads() 
+          return nil, nil
+        }() >>`,
 		Id:         "Condition",
 		NTType:     17,
 		Index:      28,
 		NumSymbols: 7,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          fmt.Println("→ RULE: Condition (if)")
+          semantics.PrintStacks()
+          semantics.PrintQuads() 
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -583,13 +593,23 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Cycle : while l_round_par Expression r_round_par do Body semicolon	<<  >>`,
+		String: `Cycle : while l_round_par Expression r_round_par do Body semicolon	<< func() (Attrib, error) {
+          fmt.Println("→ RULE: Cycle (while)")
+          semantics.PrintStacks()
+          semantics.PrintQuads()
+          return nil, nil
+        }() >>`,
 		Id:         "Cycle",
 		NTType:     19,
 		Index:      31,
 		NumSymbols: 7,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          fmt.Println("→ RULE: Cycle (while)")
+          semantics.PrintStacks()
+          semantics.PrintQuads()
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -655,6 +675,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Expression : Exp Operator Exp	<< func() (Attrib, error) {
           //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          _ = semantics.DoRelational()
           return nil, nil
         }() >>`,
 		Id:         "Expression",
@@ -664,6 +685,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           //fmt.Println("→ RULE: Expression → Exp Operator Exp (relacional)")
+          _ = semantics.DoRelational()
           return nil, nil
         }()
 		},
@@ -685,33 +707,57 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Operator : less_than	<<  >>`,
+		String: `Operator : less_than	<< func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → >")
+          semantics.PushOp(">")
+          return nil, nil
+        }() >>`,
 		Id:         "Operator",
 		NTType:     24,
 		Index:      40,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → >")
+          semantics.PushOp(">")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `Operator : more_than	<<  >>`,
+		String: `Operator : more_than	<< func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → <")
+          semantics.PushOp("<")
+          return nil, nil
+        }() >>`,
 		Id:         "Operator",
 		NTType:     24,
 		Index:      41,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → <")
+          semantics.PushOp("<")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
-		String: `Operator : not_equal	<<  >>`,
+		String: `Operator : not_equal	<< func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → !=")
+          semantics.PushOp("!=")
+          return nil, nil
+        }() >>`,
 		Id:         "Operator",
 		NTType:     24,
 		Index:      42,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          fmt.Println("→ RULE: Operator → !=")
+          semantics.PushOp("!=")
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
