@@ -27,7 +27,7 @@ var testDataAccept = []*TI{
 	            sum(x,3);
 	         }
 	         end`,
-	}, // Accept 7: Uso de variable en expresion
+	}, // Accept 1: Uso de variables con una función
 	{
 		`program sumTest;
 			var a, b, c, d, e, f, g, h, j, k, l : int;
@@ -47,7 +47,28 @@ var testDataAccept = []*TI{
                 sum = ( ( a + b ) * c + d * e * f + k / h * j ) + g * l + h + j + ( a - c * d ) / f;
             }
             end`,
-	}, // Accept 7: Uso de variable en expresion
+	}, // Accept 2: Ver que el orden de jerarquía funciona correctamente
+	{
+		`program simple;
+         main {
+            if (3 + 5 > 2 * 8) {
+                print(1);
+            };
+         }
+         end`,
+	}, // Accept 3: Prueba condicional con simbolos relaciones
+	{
+		`program withCycle;
+         var i: int;
+         main {
+            i = 0;
+            while (i < 10/5) do {
+               print(i);
+               i = i + 1;
+            };
+         }
+         end`,
+	}, // Accept 4: Prueba ciclo con simbolos relaciones
 }
 
 func TestSemanticAccept(t *testing.T) {

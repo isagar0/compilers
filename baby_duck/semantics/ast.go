@@ -21,7 +21,7 @@ func ResetSemanticState() {
 	Reset()
 	FunctionDirectory = NewDictionary()
 
-	// Limpiar pilas y cuadruplos
+	// Limpia pilas y cuadruplos
 	PilaO = NewStack()
 	PTypes = NewStack()
 	POper = NewStack()

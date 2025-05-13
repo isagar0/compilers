@@ -3,7 +3,7 @@ package semantics
 import "fmt"
 
 // Stack: Last In, Frist Out
-// Almacena una lista de enteros
+// Almacena una lista de cualquier tipo
 type Stack struct {
 	items []interface{}
 }
