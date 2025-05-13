@@ -532,7 +532,7 @@ var productionsTable = ProdTab{
         semantics.PushQuad("=", rightOp, "_", name)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        semantics.PrintQuads()
+        //semantics.PrintQuads()
         return nil, nil
       }() >>`,
 		Id:         "Assign",
@@ -555,7 +555,7 @@ var productionsTable = ProdTab{
         semantics.PushQuad("=", rightOp, "_", name)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        // semantics.PrintQuads()
+        //semantics.PrintQuads()
         return nil, nil
       }()
 		},
@@ -564,7 +564,7 @@ var productionsTable = ProdTab{
 		String: `Condition : if l_round_par Expression r_round_par Body Else semicolon	<< func() (Attrib, error) {
           //fmt.Println("→ RULE: Condition (if)")
           //semantics.PrintStacks()
-          semantics.PrintQuads() 
+          //semantics.PrintQuads() 
           return nil, nil
         }() >>`,
 		Id:         "Condition",
@@ -575,7 +575,7 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
           //fmt.Println("→ RULE: Condition (if)")
           //semantics.PrintStacks()
-          // semantics.PrintQuads() 
+          //semantics.PrintQuads() 
           return nil, nil
         }()
 		},
@@ -604,7 +604,7 @@ var productionsTable = ProdTab{
 		String: `Cycle : while l_round_par Expression r_round_par do Body semicolon	<< func() (Attrib, error) {
           //fmt.Println("→ RULE: Cycle (while)")
           //semantics.PrintStacks()
-          semantics.PrintQuads()
+          //semantics.PrintQuads()
           return nil, nil
         }() >>`,
 		Id:         "Cycle",
@@ -615,7 +615,7 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
           //fmt.Println("→ RULE: Cycle (while)")
           //semantics.PrintStacks()
-          // semantics.PrintQuads()
+          //semantics.PrintQuads()
           return nil, nil
         }()
 		},
