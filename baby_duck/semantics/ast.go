@@ -14,10 +14,25 @@ var (
 	tempVar int             // Contador para nombres de variables temporales
 )
 
+// ------------------------------------------ Limpiar ------------------------------------------
+// ResetSemanticState: Limpia todo para un programa nuevo
+func ResetSemanticState() {
+	// Limpia diccionarios
+	Reset()
+	FunctionDirectory = NewDictionary()
+
+	// Limpiar pilas y cuadruplos
+	PilaO = NewStack()
+	PTypes = NewStack()
+	POper = NewStack()
+	Quads = []QuadStructure{}
+	tempVar = 0
+}
+
 // -------------------------------------------- Quads --------------------------------------------
 // PushOperandDebug: En lugar de haer push directo lo hace desde acá para debuggear
 func PushOperandDebug(value interface{}, tipo string) {
-	fmt.Printf("→ DEBUG PushOperand: pushing type: %T = %v\n", tipo, tipo)
+	//fmt.Printf("→ DEBUG PushOperand: pushing type: %T = %v\n", tipo, tipo)
 	PilaO.Push(value)
 	PTypes.Push(tipo)
 }
@@ -116,7 +131,7 @@ func DoAddSub() error {
 		PTypes.Push(resType)
 
 		// Imprime el cuádruplo
-		fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+		// fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 	}
 	return nil
 }
@@ -150,7 +165,7 @@ func DoMulDiv() error {
 		leftOp, _ := PilaO.Pop()
 		leftType, _ := PTypes.Pop()
 
-		fmt.Printf("→ DEBUG DoMulDiv: leftType=%T(%v), rightType=%T(%v)\n", leftType, leftType, rightType, rightType)
+		//fmt.Printf("→ DEBUG DoMulDiv: leftType=%T(%v), rightType=%T(%v)\n", leftType, leftType, rightType, rightType)
 
 		// Convertir a string y mandar error si no son de ese tipo
 		ltype, ok1 := leftType.(string)
@@ -179,7 +194,7 @@ func DoMulDiv() error {
 		PTypes.Push(resType)
 
 		// Imprime el cuádruplo
-		fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+		// fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 	}
 	return nil
 }
@@ -238,7 +253,7 @@ func DoRelational() error {
 	PTypes.Push(resType)
 
 	// Imprime el cuádruplo
-	fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+	// fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
 
 	return nil
 }
@@ -258,7 +273,7 @@ func PopUntilFakeBottom() error {
 		// Su encuentra fondo falso ⏊, termina procesamiento
 		if op == "⏊" {
 			POper.Pop() // quitamos la marca
-			fmt.Println("→ POP OPERADOR: ⏊ (fin de paréntesis)")
+			// fmt.Println("→ POP OPERADOR: ⏊ (fin de paréntesis)")
 			break
 		}
 
@@ -293,12 +308,6 @@ func Reset() {
 	}
 }
 
-// ResetSemanticState: Limpia el directorio de funciones y el scope global
-func ResetSemanticState() {
-	Reset()
-	FunctionDirectory = NewDictionary()
-}
-
 // RegisterMainProgram: Crea el scope global y registra el programa principal
 func RegisterMainProgram(programName string) error {
 	// Verifica si ya existe una entrada con mismo nombre
@@ -312,7 +321,7 @@ func RegisterMainProgram(programName string) error {
 		VarTable: Current(),
 	})
 
-	fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
+	//fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
 	return nil
 }
 

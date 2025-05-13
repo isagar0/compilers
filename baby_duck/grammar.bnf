@@ -295,16 +295,20 @@ Assign
     << 
       func() (Attrib, error) {
         name := string($0.(*token.Token).Lit)
-        // reviso en el scope actual (local→global)
+
+        // Verifica que la variable exista
         if _, exists := semantics.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
-        // Imprimir stackss
-        semantics.PrintQuads()
-        //semantics.PrintStacks()
-        
+        // Obtener el resultado final de la expresión (de la pila de operandos)
+        rightOp, _ := semantics.PilaO.Pop()
 
+        // Generar el cuadruplo de asignación
+        semantics.PushQuad("=", rightOp, "_", name)
+
+        //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
+        semantics.PrintQuads()
         return nil, nil
       }()
     >>
@@ -315,7 +319,7 @@ Condition
     : if l_round_par Expression r_round_par Body Else semicolon
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: Condition (if)")
+          //fmt.Println("→ RULE: Condition (if)")
           //semantics.PrintStacks()
           semantics.PrintQuads() 
           return nil, nil
@@ -333,7 +337,7 @@ Cycle
     : while l_round_par Expression r_round_par do Body semicolon
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: Cycle (while)")
+          //fmt.Println("→ RULE: Cycle (while)")
           //semantics.PrintStacks()
           semantics.PrintQuads()
           return nil, nil
@@ -362,7 +366,7 @@ Expression
     : Exp Operator Exp
     <<
         func() (Attrib, error) {
-          fmt.Println("→ DEBUG Expression → Exp Operator Exp")
+          //fmt.Println("→ DEBUG Expression → Exp Operator Exp")
           _ = semantics.DoRelational()
           return nil, nil
         }()
@@ -370,7 +374,7 @@ Expression
     | Exp
     <<
       func() (Attrib, error) {
-        fmt.Println("→ RULE: Expression → Exp")
+        //fmt.Println("→ RULE: Expression → Exp")
         return $0, nil
       }()
     >>
@@ -380,7 +384,7 @@ Operator
     : less_than
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → >")
+          //fmt.Println("→ RULE: Operator → >")
           semantics.PushOp(">")
           return nil, nil
         }()
@@ -388,7 +392,7 @@ Operator
     | more_than
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → <")
+          //fmt.Println("→ RULE: Operator → <")
           semantics.PushOp("<")
           return nil, nil
         }()
@@ -396,7 +400,7 @@ Operator
     | not_equal
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: Operator → !=")
+          //fmt.Println("→ RULE: Operator → !=")
           semantics.PushOp("!=")
           return nil, nil
         }()
@@ -489,7 +493,7 @@ OperatorMul
     | divide
       <<
         func() (Attrib, error) {
-          fmt.Println("→ RULE: OperatorMul → /")
+          //fmt.Println("→ RULE: OperatorMul → /")
           semantics.DoMulDiv()
           semantics.PushOp("/")
           return nil, nil
@@ -522,7 +526,7 @@ Factor
     <<
       func() (Attrib, error) {
         name := string($0.(*token.Token).Lit)
-        fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
+        //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
 
         raw, exists := semantics.Current().Get(name)
         if !exists {
@@ -545,7 +549,7 @@ FakeBottom
     <<
       func() (Attrib, error) {
         semantics.PushOp("⏊")
-        fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
+        //fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
         return nil, nil
       }()
     >>
@@ -661,9 +665,9 @@ FCallListTail
     : comma Expression FCallListTail
       <<
         func() (Attrib, error) {
-          fmt.Printf("→ DEBUG FCallListTail: $1=%T (%v), $2=%T (%v)\n", $1, $1, $2, $2)
+          //fmt.Printf("→ DEBUG FCallListTail: $1=%T (%v), $2=%T (%v)\n", $1, $1, $2, $2)
           if $1 == nil {
-          return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
+            return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
           }
 
           arg := $1.(Attrib)
