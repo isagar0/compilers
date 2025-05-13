@@ -555,7 +555,7 @@ var productionsTable = ProdTab{
         semantics.PushQuad("=", rightOp, "_", name)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        semantics.PrintQuads()
+        // semantics.PrintQuads()
         return nil, nil
       }()
 		},
@@ -575,7 +575,7 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
           //fmt.Println("→ RULE: Condition (if)")
           //semantics.PrintStacks()
-          semantics.PrintQuads() 
+          // semantics.PrintQuads() 
           return nil, nil
         }()
 		},
@@ -615,7 +615,7 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
           //fmt.Println("→ RULE: Cycle (while)")
           //semantics.PrintStacks()
-          semantics.PrintQuads()
+          // semantics.PrintQuads()
           return nil, nil
         }()
 		},

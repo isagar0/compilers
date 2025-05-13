@@ -63,7 +63,7 @@ func TestSemanticAccept(t *testing.T) {
 				i+1, ts.src, err.Error())
 			continue
 		}
-
+		semantics.PrintQuads()
 	}
 }
 
