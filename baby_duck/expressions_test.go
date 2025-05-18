@@ -4,14 +4,15 @@ import (
 	"baby_duck/lexer"
 	"baby_duck/parser"
 	"baby_duck/semantics"
+	"fmt"
 	"testing"
 )
 
-type TI struct {
+type TI3 struct {
 	src string
 }
 
-var testDataAccept = []*TI{
+var testDataAccept3 = []*TI3{
 	{
 		`program withFunc;
 			 var x : int;
@@ -73,7 +74,7 @@ var testDataAccept = []*TI{
 
 func TestSemanticAccept(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range testDataAccept {
+	for i, ts := range testDataAccept3 {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 
@@ -85,23 +86,7 @@ func TestSemanticAccept(t *testing.T) {
 			continue
 		}
 		semantics.PrintQuads()
+		semantics.PrintAddressTable()
+		fmt.Println("\n===========================================================")
 	}
 }
-
-/*
-func TestSemanticFail(t *testing.T) {
-	p := parser.NewParser()
-	for i, ts := range testDataFail {
-		// Reiniciamos semántica antes de empezar
-		semantics.ResetSemanticState()
-
-		s := lexer.NewLexer([]byte(ts.src))
-		_, err := p.Parse(s)
-		if err == nil {
-			t.Errorf("Test %d (FAIL) did not produce expected error.\nSource start: %.50s...", i+1, ts.src)
-		} else {
-			t.Logf("Test %d (FAIL): Expected fail. Error: %s", i+1, err.Error())
-		}
-	}
-}
-*/

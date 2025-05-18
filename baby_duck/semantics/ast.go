@@ -1,10 +1,16 @@
 package semantics
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // --------------------------------------- Inicialización ---------------------------------------
 var VarTable = NewDictionary()          // Tabla global de variables
 var FunctionDirectory = NewDictionary() // Directorio de funciones
+var memory = NewMemoryManager()         // Memoria de direcciones
+var AddressToName = map[int]string{}    // Traducir direcciones a nombre
 
 var (
 	PilaO   = NewStack()    // Operandos
@@ -27,13 +33,84 @@ func ResetSemanticState() {
 	POper = NewStack()
 	Quads = []QuadStructure{}
 	tempVar = 0
+
+	// Limpia direcciones
+	// Reset all memory segments
+	memory.Global.Ints.Reset()
+	memory.Global.Floats.Reset()
+	memory.Local.Ints.Reset()
+	memory.Local.Floats.Reset()
+	memory.Temp.Ints.Reset()
+	memory.Temp.Floats.Reset()
+	memory.Constant.Ints.Reset()
+	memory.Constant.Floats.Reset()
+	memory.Constant.Strings.Reset()
+	AddressToName = make(map[int]string)
+}
+
+// Tabla de direcciones
+func PrintAddressTable() {
+	fmt.Println("\n==== Virtual Address Table ====")
+
+	// First print variables from scopes
+	fmt.Println("\n---- Variables ----")
+	printScopeVariables(scopes.global)
+	for _, scope := range scopes.stack {
+		printScopeVariables(scope)
+	}
+
+	// Then print constants
+	fmt.Println("\n---- Constants ----")
+	for addr, name := range AddressToName {
+		if strings.HasPrefix(name, "const_") && (addr < 1000 || addr >= 7000) {
+			fmt.Printf("%-10s → %d\n", strings.TrimPrefix(name, "const_"), addr)
+		}
+	}
+
+	// Then print temporaries
+	fmt.Println("\n---- Temporaries ----")
+	for addr, name := range AddressToName {
+		if strings.HasPrefix(name, "temp_") {
+			fmt.Printf("%-10s → %d\n", name, addr)
+		}
+	}
+}
+
+func printScopeVariables(scope *Dictionary) {
+	for _, key := range scope.Keys() {
+		if val, exists := scope.Get(key); exists {
+			vs := val.(VariableStructure)
+			fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
+		}
+	}
 }
 
 // -------------------------------------------- Quads --------------------------------------------
 // PushOperandDebug: En lugar de haer push directo lo hace desde acá para debuggear
 func PushOperandDebug(value interface{}, tipo string) {
-	//fmt.Printf("→ DEBUG PushOperand: pushing type: %T = %v\n", tipo, tipo)
-	PilaO.Push(value)
+	var address int
+
+	// ¿Es una constante?
+	if tipo == "int" || tipo == "float" || tipo == "bool" || tipo == "string" {
+		constID := fmt.Sprintf("%v", value)
+		// Skip if this looks like a variable address
+		if num, err := strconv.Atoi(constID); err == nil && num >= 1000 && num <= 6999 {
+			address = num // Use as direct address
+		} else {
+			address = GetConstAddress(constID, tipo)
+		}
+		// Only register as const if not in variable range
+		if address < 1000 || address >= 7000 {
+			AddressToName[address] = fmt.Sprintf("const_%s", constID)
+		}
+	} else {
+		// Si es una variable, buscamos su dirección
+		raw, _ := Current().Get(fmt.Sprintf("%v", value))
+		v := raw.(VariableStructure)
+		address = v.Address
+	}
+
+	PilaO.Push(address)
 	PTypes.Push(tipo)
 }
 
@@ -121,13 +198,20 @@ func DoAddSub() error {
 		}
 
 		// Genera variable temporal
-		temp := NewTemp()
+		var tempAddr int
+		switch resType {
+		case "int":
+			tempAddr, _ = memory.Temp.Ints.GetNext()
+		case "float":
+			tempAddr, _ = memory.Temp.Floats.GetNext()
+		}
+		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
 
 		// Genera el cuádruplo y lo agregamos a la lista global
-		PushQuad(op, leftOp, rightOp, temp)
+		PushQuad(op, leftOp, rightOp, tempAddr)
 
 		// Mete la variable temporal y su tipo en las pilas
-		PilaO.Push(temp)
+		PilaO.Push(tempAddr)
 		PTypes.Push(resType)
 
 		// Imprime el cuádruplo
@@ -184,13 +268,20 @@ func DoMulDiv() error {
 		}
 
 		// Genera variable temporal
-		temp := NewTemp()
+		var tempAddr int
+		switch resType {
+		case "int":
+			tempAddr, _ = memory.Temp.Ints.GetNext()
+		case "float":
+			tempAddr, _ = memory.Temp.Floats.GetNext()
+		}
+		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
 
 		// Genera el cuádruplo y lo agregamos a la lista global
-		PushQuad(op, leftOp, rightOp, temp)
+		PushQuad(op, leftOp, rightOp, tempAddr)
 
 		// Mete la variable temporal y su tipo en las pilas
-		PilaO.Push(temp)
+		PilaO.Push(tempAddr)
 		PTypes.Push(resType)
 
 		// Imprime el cuádruplo
@@ -243,13 +334,20 @@ func DoRelational() error {
 	}
 
 	// Genera variable temporal
-	temp := NewTemp()
+	var tempAddr int
+	switch resType {
+	case "int":
+		tempAddr, _ = memory.Temp.Ints.GetNext()
+	case "float":
+		tempAddr, _ = memory.Temp.Floats.GetNext()
+	}
+	AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
 
 	// Genera el cuádruplo y lo agregamos a la lista global
-	PushQuad(op, leftOp, rightOp, temp)
+	PushQuad(op, leftOp, rightOp, tempAddr)
 
 	// Mete la variable temporal y su tipo en las pilas
-	PilaO.Push(temp)
+	PilaO.Push(tempAddr)
 	PTypes.Push(resType)
 
 	// Imprime el cuádruplo
@@ -332,13 +430,51 @@ func VarDeclaration(ids []string, tipo string) error {
 
 	// Recorre cada identificador en la lista de variables a declarar
 	for _, id := range ids {
-		// Verifica si la variable ya fue declarada, marca error
+		var dir int
+		var err error
+
+		// Check current scope
 		if _, exists := tabla.Get(id); exists {
-			return fmt.Errorf("error: variable '%s' ya declarada en este ámbito", id)
+			return fmt.Errorf("error: variable '%s' ya declarada en este scope", id)
 		}
 
-		// Si no existe, agrega la variable a la tabla con su nombre y tipo
-		tabla.Put(id, VariableStructure{Name: id, Type: tipo})
+		// Check parent scopes if in local scope
+		if tabla != scopes.global {
+			if _, exists := scopes.global.Get(id); exists {
+				return fmt.Errorf("error: variable '%s' ya existe en scope global", id)
+			}
+		}
+
+		// Determina si es global o local
+		var segmento *SegmentGroup
+		if Current() == scopes.global {
+			segmento = &memory.Global
+			// fmt.Printf("Global var %s at %d\n", id, dir)
+		} else {
+			segmento = &memory.Local
+			//fmt.Printf("Local var %s at %d\n", id, dir)
+		}
+
+		switch tipo {
+		case "int":
+			dir, err = segmento.Ints.GetNext()
+		case "float":
+			dir, err = segmento.Floats.GetNext()
+		default:
+			return fmt.Errorf("tipo no soportado: %s", tipo)
+		}
+		if err != nil {
+			return err
+		}
+
+		// Agrega la variable a la tabla con dirección virtual
+		tabla.Put(id, VariableStructure{
+			Name:    id,
+			Type:    tipo,
+			Address: dir,
+		})
+		AddressToName[dir] = id
+		//fmt.Printf("Declared %s at address %d (type %s)\n", id, dir, tipo)
 	}
 
 	/*
@@ -410,6 +546,16 @@ func FuncDeclaration(name string, params []VariableStructure) error {
 
 	// Asigna los parámetros recibidos a la función
 	fs.Parameters = params
+
+	for _, param := range params {
+		// Get the actual address from the local scope
+		if raw, exists := Current().Get(param.Name); exists {
+			vs := raw.(VariableStructure)
+			AddressToName[vs.Address] = param.Name
+			// return fmt.Errorf("parameter %s already exists", param.Name)
+			//fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
+		}
+	}
 
 	// Asocia la tabla local de variables (scope actual donde se declararon los params)
 	fs.VarTable = Current()

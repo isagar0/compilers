@@ -525,11 +525,18 @@ var productionsTable = ProdTab{
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
+        // Obtener direccion
+        // vs := raw.(semantics.VariableStructure)
+        // targetAddr := vs.Address
+        
         // Obtener el resultado final de la expresión (de la pila de operandos)
         rightOp, _ := semantics.PilaO.Pop()
 
         // Generar el cuadruplo de asignación
-        semantics.PushQuad("=", rightOp, "_", name)
+        // semantics.PushQuad("=", rightOp, "_", name)
+        raw, _ := semantics.Current().Get(name)
+        vs := raw.(semantics.VariableStructure)
+        semantics.PushQuad("=", rightOp, "_", vs.Address)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
         //semantics.PrintQuads()
@@ -548,11 +555,18 @@ var productionsTable = ProdTab{
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
+        // Obtener direccion
+        // vs := raw.(semantics.VariableStructure)
+        // targetAddr := vs.Address
+        
         // Obtener el resultado final de la expresión (de la pila de operandos)
         rightOp, _ := semantics.PilaO.Pop()
 
         // Generar el cuadruplo de asignación
-        semantics.PushQuad("=", rightOp, "_", name)
+        // semantics.PushQuad("=", rightOp, "_", name)
+        raw, _ := semantics.Current().Get(name)
+        vs := raw.(semantics.VariableStructure)
+        semantics.PushQuad("=", rightOp, "_", vs.Address)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
         //semantics.PrintQuads()
@@ -631,47 +645,87 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `PrintList : Expression PrintListTail	<<  >>`,
+		String: `PrintList : Expression PrintListTail	<< func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }() >>`,
 		Id:         "PrintList",
 		NTType:     21,
 		Index:      33,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `PrintList : cte_string PrintListTail	<<  >>`,
+		String: `PrintList : cte_string PrintListTail	<< func() (Attrib, error) {
+        tok := X[0].(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }() >>`,
 		Id:         "PrintList",
 		NTType:     21,
 		Index:      34,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        tok := X[0].(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `PrintListTail : comma Expression PrintListTail	<<  >>`,
+		String: `PrintListTail : comma Expression PrintListTail	<< func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }() >>`,
 		Id:         "PrintListTail",
 		NTType:     22,
 		Index:      35,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `PrintListTail : comma cte_string PrintListTail	<<  >>`,
+		String: `PrintListTail : comma cte_string PrintListTail	<< func() (Attrib, error) {
+        tok := X[1].(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }() >>`,
 		Id:         "PrintListTail",
 		NTType:     22,
 		Index:      36,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+        tok := X[1].(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
-		String: `PrintListTail : "empty"	<<  >>`,
+		String: `PrintListTail : "empty"	<< nil, nil >>`,
 		Id:         "PrintListTail",
 		NTType:     22,
 		Index:      37,
@@ -962,14 +1016,10 @@ var productionsTable = ProdTab{
 		String: `Factor : Cte	<< func() (Attrib, error) {
         cteToken := X[0].(*token.Token)
         value := string(cteToken.Lit)
-
-        var tipo string
+        tipo := "int"
         if strings.Contains(value, ".") {
           tipo = "float"
-        } else {
-          tipo = "int"
         }
-
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -982,14 +1032,10 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
         cteToken := X[0].(*token.Token)
         value := string(cteToken.Lit)
-
-        var tipo string
+        tipo := "int"
         if strings.Contains(value, ".") {
           tipo = "float"
-        } else {
-          tipo = "int"
         }
-
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -1007,7 +1053,7 @@ var productionsTable = ProdTab{
         }
 
         vs := raw.(semantics.VariableStructure)
-        semantics.PushOperandDebug(name, vs.Type)
+        semantics.PushOperandDebug(vs.Address, vs.Type)
 
         // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil
@@ -1027,7 +1073,7 @@ var productionsTable = ProdTab{
         }
 
         vs := raw.(semantics.VariableStructure)
-        semantics.PushOperandDebug(name, vs.Type)
+        semantics.PushOperandDebug(vs.Address, vs.Type)
 
         // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil

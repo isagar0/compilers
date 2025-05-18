@@ -2,10 +2,6 @@ package semantics
 
 import "fmt"
 
-// SemanticCube: Estructura de 3 niveles que define el tipo de resultado
-// Estructura: [tipoIzq][tipoDer][operador] → tipoResultado
-type SemanticCube map[string]map[string]map[string]string
-
 // Define las reglas de tipos del lenguaje
 // Si una operación no está permitida, marca error
 var cube = SemanticCube{

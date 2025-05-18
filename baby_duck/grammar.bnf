@@ -301,11 +301,18 @@ Assign
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
+        // Obtener direccion
+        // vs := raw.(semantics.VariableStructure)
+        // targetAddr := vs.Address
+        
         // Obtener el resultado final de la expresión (de la pila de operandos)
         rightOp, _ := semantics.PilaO.Pop()
 
         // Generar el cuadruplo de asignación
-        semantics.PushQuad("=", rightOp, "_", name)
+        // semantics.PushQuad("=", rightOp, "_", name)
+        raw, _ := semantics.Current().Get(name)
+        vs := raw.(semantics.VariableStructure)
+        semantics.PushQuad("=", rightOp, "_", vs.Address)
 
         //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
         //semantics.PrintQuads()
@@ -351,15 +358,48 @@ Print
     ;
 
 PrintList
-    : Expression PrintListTail
-    | cte_string PrintListTail
-    ;
+  : Expression PrintListTail
+    <<
+      func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }()
+    >>
+  | cte_string PrintListTail
+    <<
+      func() (Attrib, error) {
+        tok := $0.(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }()
+    >>
+  ;
 
 PrintListTail
-    : comma Expression PrintListTail
-    | comma cte_string PrintListTail
-    | "empty"
-    ;
+  : comma Expression PrintListTail
+    <<
+      func() (Attrib, error) {
+        value, _ := semantics.PilaO.Pop()
+        semantics.PushQuad("PRINT", value, "_", "_")
+        return nil, nil
+      }()
+    >>
+  | comma cte_string PrintListTail
+    <<
+      func() (Attrib, error) {
+        tok := $1.(*token.Token)
+        str := string(tok.Lit)
+        addr := semantics.GetConstAddress(str, "string")
+        semantics.PushQuad("PRINT", addr, "_", "_")
+        return nil, nil
+      }()
+    >>
+  | "empty"
+    << nil, nil >>
+  ;
 
 /* EXPRESSION */
 Expression
@@ -509,14 +549,10 @@ Factor
       func() (Attrib, error) {
         cteToken := $0.(*token.Token)
         value := string(cteToken.Lit)
-
-        var tipo string
+        tipo := "int"
         if strings.Contains(value, ".") {
           tipo = "float"
-        } else {
-          tipo = "int"
         }
-
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -534,7 +570,7 @@ Factor
         }
 
         vs := raw.(semantics.VariableStructure)
-        semantics.PushOperandDebug(name, vs.Type)
+        semantics.PushOperandDebug(vs.Address, vs.Type)
 
         // devolvemos el token para que la propia producción lo use en la AST
         return $0, nil

@@ -9,7 +9,11 @@ import (
 	"baby_duck/semantics"
 )
 
-var testDataAccept2 = []*TI{
+type TI2 struct {
+	src string
+}
+
+var testDataAccept2 = []*TI2{
 	{
 		`program ejemplo1;
 			var x : int;
@@ -125,7 +129,7 @@ var testDataAccept2 = []*TI{
 	}, // Accept 8: Llamar funcion desde otra funcion
 }
 
-var testDataFail2 = []*TI{
+var testDataFail2 = []*TI2{
 	{
 		`program dupVar;
 			 var x: int;
