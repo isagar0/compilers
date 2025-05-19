@@ -401,20 +401,60 @@ ElseTail
 
 /* CYCLE */
 CycleHeader
-    : while
-    ;
+  : while
+  <<
+    func() (Attrib, error) {
+      // Guardamos el índice actual como el inicio del ciclo
+      semantics.PJumps.Push(len(semantics.Quads))
+      return nil, nil
+    }()
+  >>
+  ;
 
 Cycle
-    : CycleHeader CycleExpression do CycleTail Body semicolon
+    : CycleHeader CycleExpression do Body CycleTail semicolon
     ;
 
 CycleExpression
-    : l_round_par Expression r_round_par
-    ;
+  : l_round_par Expression r_round_par
+  <<
+    func() (Attrib, error) {
+      condAddr, _ := semantics.PilaO.Pop()
+      condType, _ := semantics.PTypes.Pop()
+
+      if condType != "bool" {
+        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
+      }
+
+      // Genera GOTOF, y guarda su índice
+      semantics.PushQuad("GOTOF", condAddr, "_", -1)
+      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      return nil, nil
+    }()
+  >>
+  ;
 
 CycleTail
-    : empty
-    ;
+  : empty
+  <<
+    func() (Attrib, error) {
+      // Primero sacamos los dos índices
+      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
+      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
+
+      falseJump := falseJumpRaw.(int)
+      returnJump := returnJumpRaw.(int)
+
+      // 👉 1. Generamos el GOTO después de ejecutar el cuerpo
+      semantics.PushQuad("GOTO", "_", "_", returnJump)
+
+      // 👉 2. Hacemos backpatch del GOTOF para que salte al final del ciclo
+      semantics.Quads[falseJump].Result = len(semantics.Quads)
+
+      return nil, nil
+    }()
+  >>
+  ;
 
 /* PRINT */
 Print
@@ -470,12 +510,12 @@ Expression
     : Exp Operator Exp
     <<
         func() (Attrib, error) {
-          fmt.Println("→ DEBUG: Doing relational operation")
+          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
+          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }()
       >>

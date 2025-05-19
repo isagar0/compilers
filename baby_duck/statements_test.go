@@ -72,6 +72,44 @@ var testDataAccept3 = []*TI3{
 			}
 			end`,
 	}, // Accept 3: Complicated If - else
+	{
+		`program withCycle;
+         var a, b, c, d : int;
+         main {
+            while (a > b * c) do {
+               a = a - d;
+			   print(a);
+            };
+			b = c + a;
+         }
+         end`,
+	}, // Accept 4: Uso de ciclo while-do
+	{
+		`program withBoth;
+         var a, b, c, d, e, f, g, h, j, k : int;
+         main {
+		 	a = b + c * (d - e / f) * h;
+			b = e - f;
+            while (a * b - c > d * e / (g + h) ) do {
+               h = j * k + b;
+			   if (b < h){
+					b = h + j;
+					while (b > a + c) do {
+						print(a + b * c, d - e);
+						b = b - j;
+					};
+			   }
+			   else {
+			   		while (a - d < c + b) do {
+						a = a + b;
+						print(b - d);
+					};
+			   };
+            };
+			f = a + b;
+         }
+         end`,
+	}, // Accept 5: Uso de if con ciclo while-do
 }
 
 func TestSemanticAccept(t *testing.T) {

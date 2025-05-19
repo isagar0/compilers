@@ -715,17 +715,25 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `CycleHeader : while	<<  >>`,
+		String: `CycleHeader : while	<< func() (Attrib, error) {
+      // Guardamos el índice actual como el inicio del ciclo
+      semantics.PJumps.Push(len(semantics.Quads))
+      return nil, nil
+    }() >>`,
 		Id:         "CycleHeader",
 		NTType:     21,
 		Index:      33,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+      // Guardamos el índice actual como el inicio del ciclo
+      semantics.PJumps.Push(len(semantics.Quads))
+      return nil, nil
+    }()
 		},
 	},
 	ProdTabEntry{
-		String: `Cycle : CycleHeader CycleExpression do CycleTail Body semicolon	<<  >>`,
+		String: `Cycle : CycleHeader CycleExpression do Body CycleTail semicolon	<<  >>`,
 		Id:         "Cycle",
 		NTType:     22,
 		Index:      34,
@@ -735,23 +743,77 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `CycleExpression : l_round_par Expression r_round_par	<<  >>`,
+		String: `CycleExpression : l_round_par Expression r_round_par	<< func() (Attrib, error) {
+      condAddr, _ := semantics.PilaO.Pop()
+      condType, _ := semantics.PTypes.Pop()
+
+      if condType != "bool" {
+        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
+      }
+
+      // Genera GOTOF, y guarda su índice
+      semantics.PushQuad("GOTOF", condAddr, "_", -1)
+      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      return nil, nil
+    }() >>`,
 		Id:         "CycleExpression",
 		NTType:     23,
 		Index:      35,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+      condAddr, _ := semantics.PilaO.Pop()
+      condType, _ := semantics.PTypes.Pop()
+
+      if condType != "bool" {
+        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
+      }
+
+      // Genera GOTOF, y guarda su índice
+      semantics.PushQuad("GOTOF", condAddr, "_", -1)
+      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      return nil, nil
+    }()
 		},
 	},
 	ProdTabEntry{
-		String: `CycleTail : empty	<<  >>`,
+		String: `CycleTail : empty	<< func() (Attrib, error) {
+      // Primero sacamos los dos índices
+      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
+      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
+
+      falseJump := falseJumpRaw.(int)
+      returnJump := returnJumpRaw.(int)
+
+      // 👉 1. Generamos el GOTO después de ejecutar el cuerpo
+      semantics.PushQuad("GOTO", "_", "_", returnJump)
+
+      // 👉 2. Hacemos backpatch del GOTOF para que salte al final del ciclo
+      semantics.Quads[falseJump].Result = len(semantics.Quads)
+
+      return nil, nil
+    }() >>`,
 		Id:         "CycleTail",
 		NTType:     24,
 		Index:      36,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return nil, nil
+			return func() (Attrib, error) {
+      // Primero sacamos los dos índices
+      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
+      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
+
+      falseJump := falseJumpRaw.(int)
+      returnJump := returnJumpRaw.(int)
+
+      // 👉 1. Generamos el GOTO después de ejecutar el cuerpo
+      semantics.PushQuad("GOTO", "_", "_", returnJump)
+
+      // 👉 2. Hacemos backpatch del GOTOF para que salte al final del ciclo
+      semantics.Quads[falseJump].Result = len(semantics.Quads)
+
+      return nil, nil
+    }()
 		},
 	},
 	ProdTabEntry{
@@ -856,12 +918,12 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Expression : Exp Operator Exp	<< func() (Attrib, error) {
-          fmt.Println("→ DEBUG: Doing relational operation")
+          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
+          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }() >>`,
 		Id:         "Expression",
@@ -870,12 +932,12 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          fmt.Println("→ DEBUG: Doing relational operation")
+          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
+          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }()
 		},

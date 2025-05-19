@@ -352,7 +352,7 @@ func DoRelational() error {
 	PTypes.Push(resType)
 
 	// Imprime el cuádruplo
-	fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, tempAddr)
+	// fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, tempAddr)
 
 	return nil
 }
