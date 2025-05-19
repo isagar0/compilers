@@ -321,35 +321,99 @@ Assign
     >>
   ;
 
-/* CONDITION */
+/* IF */
 Condition
-    : if l_round_par Expression r_round_par Body Else semicolon
+  : if ConditionTail Body Else semicolon
+  <<
+    func() (Attrib, error) {
+      hasElse := $3.(bool)
+
+      if hasElse {
+        // 1. Pop del salto al final (GOTO)
+        endJumpRaw, _ := semantics.PJumps.Pop()
+        // 2. Pop del salto falso (GOTOF)
+        falseJumpRaw, _ := semantics.PJumps.Pop()
+
+        endJump := endJumpRaw.(int)
+        falseJump := falseJumpRaw.(int)
+
+        semantics.Quads[falseJump].Result = endJump + 1
+        semantics.Quads[endJump].Result = len(semantics.Quads)
+      } else {
+        // Solo el salto falso (GOTOF)
+        falseJumpRaw, _ := semantics.PJumps.Pop()
+        falseJump := falseJumpRaw.(int)
+        semantics.Quads[falseJump].Result = len(semantics.Quads)
+      }
+
+      return nil, nil
+    }()
+  >>
+  ;
+
+ConditionTail
+  : l_round_par Expression r_round_par 
       <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: Condition (if)")
-          //semantics.PrintStacks()
-          //semantics.PrintQuads() 
-          return nil, nil
-        }()
-      >>
-    ;
+      func() (Attrib, error) {
+        condAddr, _ := semantics.PilaO.Pop()
+        condType, _ := semantics.PTypes.Pop()
+
+        if condType != "bool" {
+          return nil, fmt.Errorf("condición en if debe ser booleana, recibió: %v", condType)
+        }
+
+        // Cuádruplo GOTOF con dirección a rellenar luego
+        semantics.PushQuad("GOTOF", condAddr, "_", -1)
+
+        // Guardamos la posición del cuádruplo para backpatch
+        semantics.PJumps.Push(len(semantics.Quads) - 1)
+
+        return nil, nil
+      }()
+    >>
+  ;
 
 Else
-    : else Body
+    : else ElseTail Body
+    <<
+      func() (Attrib, error) {
+        return true, nil // para saber que hay else
+      }()
+    >>
     | "empty"
+    <<
+      func() (Attrib, error) {
+        return false, nil // para saber que NO hay else
+      }()
+    >>
+    ;
+
+ElseTail
+    : empty
+    <<
+      func() (Attrib, error) {
+        semantics.PushQuad("GOTO", "_", "_", -1)
+        semantics.PJumps.Push(len(semantics.Quads) - 1)
+        return nil, nil
+      }()
+    >>
     ;
 
 /* CYCLE */
+CycleHeader
+    : while
+    ;
+
 Cycle
-    : while l_round_par Expression r_round_par do Body semicolon
-      <<
-        func() (Attrib, error) {
-          //fmt.Println("→ RULE: Cycle (while)")
-          //semantics.PrintStacks()
-          //semantics.PrintQuads()
-          return nil, nil
-        }()
-      >>
+    : CycleHeader CycleExpression do CycleTail Body semicolon
+    ;
+
+CycleExpression
+    : l_round_par Expression r_round_par
+    ;
+
+CycleTail
+    : empty
     ;
 
 /* PRINT */
@@ -406,8 +470,12 @@ Expression
     : Exp Operator Exp
     <<
         func() (Attrib, error) {
-          //fmt.Println("→ DEBUG Expression → Exp Operator Exp")
-          _ = semantics.DoRelational()
+          fmt.Println("→ DEBUG: Doing relational operation")
+          err := semantics.DoRelational()
+          if err != nil {
+            return nil, err
+          }
+          fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }()
       >>

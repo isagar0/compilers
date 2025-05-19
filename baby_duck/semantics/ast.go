@@ -11,6 +11,7 @@ var VarTable = NewDictionary()          // Tabla global de variables
 var FunctionDirectory = NewDictionary() // Directorio de funciones
 var memory = NewMemoryManager()         // Memoria de direcciones
 var AddressToName = map[int]string{}    // Traducir direcciones a nombre
+var PJumps = NewStack()                 // Stack para saltos pendientes
 
 var (
 	PilaO   = NewStack()    // Operandos
@@ -146,7 +147,7 @@ func PrintStacks() {
 func PrintQuads() {
 	fmt.Println("\nCuádruplos generados:")
 	for i, q := range Quads {
-		fmt.Printf("%d: (%s %v %v %v)\n", i+1, q.Oper, q.Left, q.Right, q.Result)
+		fmt.Printf("%d: (%s %v %v %v)\n", i, q.Oper, q.Left, q.Right, q.Result)
 	}
 }
 
@@ -351,7 +352,7 @@ func DoRelational() error {
 	PTypes.Push(resType)
 
 	// Imprime el cuádruplo
-	// fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
+	fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, tempAddr)
 
 	return nil
 }
