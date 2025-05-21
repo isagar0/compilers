@@ -51,17 +51,17 @@ func ResetSemanticState() {
 
 // Tabla de direcciones
 func PrintAddressTable() {
-	fmt.Println("\n==== Virtual Address Table ====")
+	fmt.Println("\n==== Tabla de direcciones virtuales ====")
 
 	// First print variables from scopes
-	fmt.Println("\n---- Variables ----")
+	fmt.Println("\n---- Variabls Globales ----")
 	printScopeVariables(scopes.global)
 	for _, scope := range scopes.stack {
 		printScopeVariables(scope)
 	}
 
 	// Then print constants
-	fmt.Println("\n---- Constants ----")
+	fmt.Println("\n---- Constantes ----")
 	for addr, name := range AddressToName {
 		if strings.HasPrefix(name, "const_") && (addr < 1000 || addr >= 7000) {
 			fmt.Printf("%-10s → %d\n", strings.TrimPrefix(name, "const_"), addr)
@@ -69,7 +69,7 @@ func PrintAddressTable() {
 	}
 
 	// Then print temporaries
-	fmt.Println("\n---- Temporaries ----")
+	fmt.Println("\n---- Temporales ----")
 	for addr, name := range AddressToName {
 		if strings.HasPrefix(name, "temp_") {
 			fmt.Printf("%-10s → %d\n", name, addr)

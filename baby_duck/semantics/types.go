@@ -32,3 +32,16 @@ type MemorySegment struct {
 	end   int
 	next  int
 }
+
+type SegmentGroup struct {
+	Ints    MemorySegment
+	Floats  MemorySegment
+	Strings MemorySegment
+}
+
+type MemoryManager struct {
+	Global   SegmentGroup
+	Local    SegmentGroup
+	Temp     SegmentGroup
+	Constant SegmentGroup
+}

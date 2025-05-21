@@ -19,19 +19,6 @@ func (m *MemorySegment) Reset() {
 	m.next = m.start
 }
 
-type SegmentGroup struct {
-	Ints    MemorySegment
-	Floats  MemorySegment
-	Strings MemorySegment // Add this
-}
-
-type MemoryManager struct {
-	Global   SegmentGroup
-	Local    SegmentGroup
-	Temp     SegmentGroup
-	Constant SegmentGroup
-}
-
 func NewMemoryManager() *MemoryManager {
 	return &MemoryManager{
 		Global: SegmentGroup{
