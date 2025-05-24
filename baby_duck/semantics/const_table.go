@@ -2,12 +2,6 @@ package semantics
 
 import "strconv"
 
-type ConstTable struct {
-	ints    []string
-	floats  []string
-	strings []string // Add string support
-}
-
 var Consts = ConstTable{
 	ints:    []string{},
 	floats:  []string{},

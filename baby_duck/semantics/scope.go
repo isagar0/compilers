@@ -1,11 +1,5 @@
 package semantics
 
-// ScopeManager: Maneja la tabla global y una pila de scopes locales
-type ScopeManager struct {
-	global *Dictionary   // Scope global
-	stack  []*Dictionary // Pila scopes locales
-}
-
 // scopes: Instancia global
 var scopes = &ScopeManager{
 	global: NewDictionary(),

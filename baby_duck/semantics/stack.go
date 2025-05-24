@@ -2,12 +2,6 @@ package semantics
 
 import "fmt"
 
-// Stack: Last In, Frist Out
-// Almacena una lista de cualquier tipo
-type Stack struct {
-	items []interface{}
-}
-
 // NewStack: crea una nueva pila vacía.
 func NewStack() *Stack {
 	return &Stack{

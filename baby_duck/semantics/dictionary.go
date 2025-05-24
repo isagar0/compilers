@@ -2,13 +2,6 @@ package semantics
 
 import "fmt"
 
-// Dictionary: Almacena pares clave-valor (string-valor de cualquier tipo)
-type Dictionary struct {
-	items  map[string]interface{} // Mapa para almacenar cualquier tipo de valor
-	keys   []string               // Slice para ordenar las claves
-	parent *Dictionary            // Referencia scope padre (búsquedas jerárquicas)
-}
-
 // NewDictionary: Constructor del diccionario
 func NewDictionary() *Dictionary {
 	return &Dictionary{
