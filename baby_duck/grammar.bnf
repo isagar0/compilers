@@ -74,7 +74,6 @@ Program
   : program id semicolon Vars FunctionList main Body end
     <<
       func() (Attrib, error) {
-        // 2) registro el main antes de Vars
         token := $1.(*token.Token)
         name := string(token.Lit)
         if err := semantics.RegisterMainProgram(name); err != nil {
