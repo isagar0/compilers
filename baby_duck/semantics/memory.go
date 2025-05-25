@@ -93,6 +93,8 @@ func GetConstAddress(literal string, tipo string) int {
 		segment = &memory.Constant.Floats
 	case "string":
 		segment = &memory.Constant.Strings
+	case "bool":
+		segment = &memory.Temp.Bools
 	default:
 		panic("Tipo de constante no soportado: " + tipo)
 	}

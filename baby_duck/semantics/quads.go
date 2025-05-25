@@ -154,7 +154,10 @@ func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
 			tempAddr, _ = memory.Temp.Ints.GetNext()
 		case "float":
 			tempAddr, _ = memory.Temp.Floats.GetNext()
+		case "bool":
+			tempAddr, _ = memory.Temp.Bools.GetNext()
 		}
+
 		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
 
 		PushQuad(op, leftOp, rightOp, tempAddr)
