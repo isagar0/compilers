@@ -99,251 +99,92 @@ func PushQuad(oper string, left, right, res interface{}) {
 	Quads = append(Quads, QuadStructure{oper, left, right, res})
 }
 
-// DoAddSub: Genera cuádruplos para operaciones + y -
+// ProcessOperation: Agregar quads
+func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
+	for {
+		top, err := POper.Peek()
+		if err != nil {
+			return nil
+		}
+
+		op := top.(string)
+
+		// Caso especial: fake bottom
+		if stopOnFakeBottom && op == "⏊" {
+			POper.Pop()
+			break
+		}
+
+		// Verificar operadores válidos
+		valid := false
+		for _, validOp := range validOps {
+			if op == validOp {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			if stopOnFakeBottom {
+				return fmt.Errorf("operador inesperado en paréntesis: %v", op)
+			}
+			break
+		}
+
+		// Lógica común de procesamiento
+		POper.Pop()
+		rightOp, _ := PilaO.Pop()
+		rightType, _ := PTypes.Pop()
+		leftOp, _ := PilaO.Pop()
+		leftType, _ := PTypes.Pop()
+
+		ltype, ok1 := leftType.(string)
+		rtype, ok2 := rightType.(string)
+		if !ok1 || !ok2 {
+			return fmt.Errorf("error: tipos no son string: left=%T, right=%T", leftType, rightType)
+		}
+
+		resType, err := GetResultType(ltype, rtype, op)
+		if err != nil {
+			return err
+		}
+
+		var tempAddr int
+		switch resType {
+		case "int":
+			tempAddr, _ = memory.Temp.Ints.GetNext()
+		case "float":
+			tempAddr, _ = memory.Temp.Floats.GetNext()
+		}
+		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
+
+		PushQuad(op, leftOp, rightOp, tempAddr)
+		PilaO.Push(tempAddr)
+		PTypes.Push(resType)
+	}
+	return nil
+}
+
+// DoAddSub: Agregar quad para suma o resta
 func DoAddSub() error {
-	for {
-		// Imprime estado de las pilas
-		// PrintStacks()
-
-		// Verifica el tope, si esta vacía termina el ciclo
-		top, err := POper.Peek()
-		if err != nil {
-			return nil
-		}
-
-		// Convierte el tope a string
-		op := top.(string)
-
-		// Si no es un operador + o -, salimos del ciclo
-		if op != "+" && op != "-" {
-			break
-		}
-
-		// Operandos y tipos
-		// Derecho
-		rightOp, _ := PilaO.Pop()
-		rightType, _ := PTypes.Pop()
-		//fmt.Printf("→ rightOp: %v, rightType: %v\n", rightOp, rightType)
-
-		// Izquierdo
-		leftOp, _ := PilaO.Pop()
-		leftType, _ := PTypes.Pop()
-		//fmt.Printf("→ leftOp: %v, leftType: %v\n", leftOp, leftType)
-
-		// Convertir a string y mandar error si no son de ese tipo
-		ltype, ok1 := leftType.(string)
-		rtype, ok2 := rightType.(string)
-		if !ok1 || !ok2 {
-			return fmt.Errorf("\nDoAddSub error: tipos no son string: left=%T, right=%T", leftType, rightType)
-		}
-
-		// Quitar el operador de la pila
-		POper.Pop()
-
-		// Llama al cubo semántico para validar los tipos, si no es valido regresa error
-		resType, err := GetResultType(ltype, rtype, op)
-		if err != nil {
-			return err
-		}
-
-		// Genera variable temporal
-		var tempAddr int
-		switch resType {
-		case "int":
-			tempAddr, _ = memory.Temp.Ints.GetNext()
-		case "float":
-			tempAddr, _ = memory.Temp.Floats.GetNext()
-		}
-		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
-
-		// Genera el cuádruplo y lo agregamos a la lista global
-		PushQuad(op, leftOp, rightOp, tempAddr)
-
-		// Mete la variable temporal y su tipo en las pilas
-		PilaO.Push(tempAddr)
-		PTypes.Push(resType)
-
-		// Imprime el cuádruplo
-		// fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
-	}
-	return nil
+	return ProcessOperation([]string{"+", "-"}, false)
 }
 
-// DoMulDiv: Genera cuádruplos para operaciones * y /
+// DoMulDiv: Agregar quad para multiplicación o divición
 func DoMulDiv() error {
-	for {
-		// Imprime estado de las pilas
-		// PrintStacks()
-
-		// Verifica el tope, si esta vacía termina el ciclo
-		top, err := POper.Peek()
-		if err != nil {
-			return nil
-		}
-
-		// Convierte el tope a string
-		op := top.(string)
-
-		// Si no es un operador * o /, salimos del ciclo
-		if op != "*" && op != "/" {
-			break
-		}
-
-		// Operandos y tipos
-		// Derecho
-		rightOp, _ := PilaO.Pop()
-		rightType, _ := PTypes.Pop()
-
-		// Izquierdo
-		leftOp, _ := PilaO.Pop()
-		leftType, _ := PTypes.Pop()
-
-		//fmt.Printf("→ DEBUG DoMulDiv: leftType=%T(%v), rightType=%T(%v)\n", leftType, leftType, rightType, rightType)
-
-		// Convertir a string y mandar error si no son de ese tipo
-		ltype, ok1 := leftType.(string)
-		rtype, ok2 := rightType.(string)
-		if !ok1 || !ok2 {
-			return fmt.Errorf("DoMulDiv error: tipos no son string: left=%T, right=%T", leftType, rightType)
-		}
-
-		// Quitar el operador de la pila
-		POper.Pop()
-
-		// Llama al cubo semántico para validar los tipos, si no es valido regresa error
-		resType, err := GetResultType(ltype, rtype, op)
-		if err != nil {
-			return err
-		}
-
-		// Genera variable temporal
-		var tempAddr int
-		switch resType {
-		case "int":
-			tempAddr, _ = memory.Temp.Ints.GetNext()
-		case "float":
-			tempAddr, _ = memory.Temp.Floats.GetNext()
-		}
-		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
-
-		// Genera el cuádruplo y lo agregamos a la lista global
-		PushQuad(op, leftOp, rightOp, tempAddr)
-
-		// Mete la variable temporal y su tipo en las pilas
-		PilaO.Push(tempAddr)
-		PTypes.Push(resType)
-
-		// Imprime el cuádruplo
-		// fmt.Printf("\n→ GENERATE QUAD: %s %v %v -> %v\n", op, leftOp, rightOp, temp)
-	}
-	return nil
+	return ProcessOperation([]string{"*", "/"}, false)
 }
 
-// DoRelational: Genera cuádruplos para operadores relacionales <, >, !=
+// DoRelational: Agregar quad para operadores relacionales
 func DoRelational() error {
-	// Imprime estado de las pilas
-	// PrintStacks()
-
-	// Verifica el tope, si esta vacía termina el ciclo
-	top, err := POper.Peek()
-	if err != nil {
-		return nil // pila vacía
+	if top, err := POper.Peek(); err != nil || !(top.(string) == "<" || top.(string) == ">" || top.(string) == "!=") {
+		return nil
 	}
-
-	// Convierte el tope a string
-	op := top.(string)
-	// Si no es un operador relacional, salimos del ciclo
-	if op != "<" && op != ">" && op != "!=" {
-		return nil // no es operador relacional
-	}
-
-	// Operandos y tipos
-	// Derecho
-	rightOp, _ := PilaO.Pop()
-	rightType, _ := PTypes.Pop()
-
-	// Izquierdo
-	leftOp, _ := PilaO.Pop()
-	leftType, _ := PTypes.Pop()
-
-	// Convertir a string y mandar error si no son de ese tipo
-	ltype, ok1 := leftType.(string)
-	rtype, ok2 := rightType.(string)
-	if !ok1 || !ok2 {
-		return fmt.Errorf("DoRelational error: tipos no son string: left=%T, right=%T", leftType, rightType)
-	}
-
-	// Quitar el operador de la pila
-	POper.Pop()
-
-	// Llama al cubo semántico para validar los tipos, si no es valido regresa error
-	resType, err := GetResultType(ltype, rtype, op)
-	if err != nil {
-		return err
-	}
-
-	// Genera variable temporal
-	var tempAddr int
-	switch resType {
-	case "int":
-		tempAddr, _ = memory.Temp.Ints.GetNext()
-	case "float":
-		tempAddr, _ = memory.Temp.Floats.GetNext()
-	}
-	AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
-
-	// Genera el cuádruplo y lo agregamos a la lista global
-	PushQuad(op, leftOp, rightOp, tempAddr)
-
-	// Mete la variable temporal y su tipo en las pilas
-	PilaO.Push(tempAddr)
-	PTypes.Push(resType)
-
-	// Imprime el cuádruplo
-	// fmt.Printf("→ GENERATE RELATIONAL: %s %v %v -> %v\n", op, leftOp, rightOp, tempAddr)
-
-	return nil
+	return ProcessOperation([]string{"<", ">", "!="}, false)
 }
 
-// PopUntilFakeBottom: Procesa operadores hasta encontrar el fondo falso (⏊) para ()
+// PopUntilFakeBottom: Agregar simbolo para parentesis
 func PopUntilFakeBottom() error {
-	for {
-		// Verifica el tope, si esta vacía termina el ciclo
-		top, err := POper.Peek()
-		if err != nil {
-			break
-		}
-
-		// Convertir a string y mandar error si no son de ese tipo
-		op := top.(string)
-
-		// Su encuentra fondo falso ⏊, termina procesamiento
-		if op == "⏊" {
-			POper.Pop() // quitamos la marca
-			// fmt.Println("→ POP OPERADOR: ⏊ (fin de paréntesis)")
-			break
-		}
-
-		// Si es suma o resta, genera su cuádruplo
-		if op == "+" || op == "-" {
-			err := DoAddSub()
-			if err != nil {
-				return err
-			}
-
-			// Si es multiplicación o división, genera su cuádruplo
-		} else if op == "*" || op == "/" {
-			err := DoMulDiv()
-			if err != nil {
-				return err
-			}
-
-			// Si encuentra otro operador, error
-		} else {
-			return fmt.Errorf("operador inesperado en paréntesis: %v", op)
-		}
-	}
-	return nil
+	return ProcessOperation([]string{"+", "-", "*", "/"}, true)
 }
 
 // PrintStacks: Imprime las pilas actuales
