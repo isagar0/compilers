@@ -2,7 +2,6 @@ package semantics
 
 import (
 	"fmt"
-	"strings"
 )
 
 // --------------------------------------- Inicialización ---------------------------------------
@@ -33,43 +32,6 @@ func ResetSemanticState() {
 	memory.Constant.Floats.Reset()
 	memory.Constant.Strings.Reset()
 	AddressToName = make(map[int]string)
-}
-
-// Tabla de direcciones
-func PrintAddressTable() {
-	fmt.Println("\n==== Tabla de direcciones virtuales ====")
-
-	// First print variables from scopes
-	fmt.Println("\n---- Variabls Globales ----")
-	printScopeVariables(scopes.global)
-	for _, scope := range scopes.stack {
-		printScopeVariables(scope)
-	}
-
-	// Then print constants
-	fmt.Println("\n---- Constantes ----")
-	for addr, name := range AddressToName {
-		if strings.HasPrefix(name, "const_") && (addr < 1000 || addr >= 7000) {
-			fmt.Printf("%-10s → %d\n", strings.TrimPrefix(name, "const_"), addr)
-		}
-	}
-
-	// Then print temporaries
-	fmt.Println("\n---- Temporales ----")
-	for addr, name := range AddressToName {
-		if strings.HasPrefix(name, "temp_") {
-			fmt.Printf("%-10s → %d\n", name, addr)
-		}
-	}
-}
-
-func printScopeVariables(scope *Dictionary) {
-	for _, key := range scope.Keys() {
-		if val, exists := scope.Get(key); exists {
-			vs := val.(VariableStructure)
-			fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
-		}
-	}
 }
 
 // -------------------------------------------- Vars --------------------------------------------

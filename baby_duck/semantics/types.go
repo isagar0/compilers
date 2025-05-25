@@ -4,8 +4,7 @@ package semantics
 
 // Dictionary: Almacena pares clave-valor
 type Dictionary struct {
-	items  map[string]interface{} // Mapa para cualquier tipo de valor
-	keys   []string               // Slice para ordenar las claves
+	Items  map[string]interface{} // Mapa para cualquier tipo de valor
 	parent *Dictionary            // Referencia scope padre
 }
 
@@ -30,7 +29,7 @@ type FunctionStructure struct {
 }
 
 // ------------------------------------------ QUADS ------------------------------------------
-// Stack: Last In, Frist Out
+// Stack: Last In, Firsst Out
 type Stack struct {
 	items []interface{}
 }
@@ -61,6 +60,7 @@ type SegmentGroup struct {
 	Ints    MemorySegment
 	Floats  MemorySegment
 	Strings MemorySegment
+	Bools   MemorySegment
 }
 
 // MemoryManager: Administrador principal de memoria
@@ -69,11 +69,4 @@ type MemoryManager struct {
 	Local    SegmentGroup
 	Temp     SegmentGroup
 	Constant SegmentGroup
-}
-
-// ConstTable: Tabla de constantes para evitar duplicados.
-type ConstTable struct {
-	ints    []string
-	floats  []string
-	strings []string
 }

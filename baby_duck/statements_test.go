@@ -13,6 +13,17 @@ type TI3 struct {
 }
 
 var testDataAccept3 = []*TI3{
+
+	{
+		`program SimpleIf;
+			var a, b : int;
+            main {
+                a = 1;
+                b = 2;
+                print(a < b);
+            }
+            end`,
+	}, // Accept 1: If simple
 	{
 		`program SimpleIf;
 			var a, b, c, d : int;

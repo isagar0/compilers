@@ -2,8 +2,35 @@ package semantics
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 )
+
+// --------------------------------------- DICTIONARY ---------------------------------------
+// NewDictionary: Constructor del diccionario
+func NewDictionary() *Dictionary {
+	return &Dictionary{
+		Items:  make(map[string]interface{}),
+		parent: nil,
+	}
+}
+
+// Put: Inserta una clave-valor manteniendo el orden de inserción
+func (d *Dictionary) Put(key string, value interface{}) {
+	d.Items[key] = value
+}
+
+// Get: Obtiene el valor asociado a una clave
+func (d *Dictionary) Get(key string) (interface{}, bool) {
+	if val, ok := d.Items[key]; ok {
+		return val, true
+	}
+	if d.parent != nil {
+		return d.parent.Get(key)
+	}
+	return nil, false
+}
+
+// ----------------------------------------- MEMORY -----------------------------------------
 
 func NewMemorySegment(start, end int) MemorySegment {
 	return MemorySegment{start: start, end: end, next: start}
@@ -35,62 +62,81 @@ func NewMemoryManager() *MemoryManager {
 		Temp: SegmentGroup{
 			Ints:   NewMemorySegment(5000, 5999),
 			Floats: NewMemorySegment(6000, 6999),
+			Bools:  NewMemorySegment(7000, 7999),
 		},
 		Constant: SegmentGroup{
-			Ints:    NewMemorySegment(7000, 7999),
-			Floats:  NewMemorySegment(8000, 8999),
-			Strings: NewMemorySegment(9000, 9999), // Add string constant range
+			Ints:    NewMemorySegment(8000, 8999),
+			Floats:  NewMemorySegment(9000, 9999),
+			Strings: NewMemorySegment(10000, 10999),
 		},
 	}
 }
 
-var Consts = ConstTable{
-	ints:    []string{},
-	floats:  []string{},
-	strings: []string{}, // Initialize string storage
-}
-
 func GetConstAddress(literal string, tipo string) int {
-	var list *[]string
 	var segment *MemorySegment
-	var addr int
-	var err error
 
 	switch tipo {
 	case "int":
-		list = &Consts.ints
 		segment = &memory.Constant.Ints
 	case "float":
-		list = &Consts.floats
 		segment = &memory.Constant.Floats
-	case "string": // Add string case
-		list = &Consts.strings
-		segment = &memory.Constant.Strings // You'll need to add this to MemoryManager
+	case "string":
+		segment = &memory.Constant.Strings
 	default:
 		panic("Tipo de constante no soportado: " + tipo)
 	}
 
-	// Buscar si ya existe
-	for i, val := range *list {
-		if val == literal {
-			return segment.start + i
+	// Buscar si ya existe la constante en el segmento
+	for i := 0; i < segment.next-segment.start; i++ {
+		addr := segment.start + i
+		if AddressToName[addr] == "const_"+literal {
+			return addr
 		}
 	}
 
-	// Si no existe, asigna nueva dirección
-	addr, err = segment.GetNext()
-
+	// Si no existe, asignar nueva dirección
+	addr, err := segment.GetNext()
 	if err != nil {
 		panic(err)
 	}
 
-	// Evita registrar direcciones virtuales como constantes
-	if num, err := strconv.Atoi(literal); err == nil {
-		if num >= 1000 && num <= 6999 { // dentro de rangos de variables o temporales
-			return num // ya es una dirección, no registrar
+	// Registrar en AddressToName
+	AddressToName[addr] = "const_" + literal
+
+	return addr
+}
+
+// Tabla de direcciones
+func PrintAddressTable() {
+	fmt.Println("\n==== Tabla de direcciones virtuales ====")
+
+	// First print variables from scopes
+	fmt.Println("\n---- Variables Globales ----")
+	printScopeVariables(scopes.global)
+	for _, scope := range scopes.stack {
+		printScopeVariables(scope)
+	}
+
+	// Then print constants
+	fmt.Println("\n---- Constantes ----")
+	for addr, name := range AddressToName {
+		if strings.HasPrefix(name, "const_") && (addr < 1000 || addr >= 7000) {
+			fmt.Printf("%-10s → %d\n", strings.TrimPrefix(name, "const_"), addr)
 		}
 	}
 
-	*list = append(*list, literal)
-	return addr
+	// Then print temporaries
+	fmt.Println("\n---- Temporales ----")
+	for addr, name := range AddressToName {
+		if strings.HasPrefix(name, "temp_") {
+			fmt.Printf("%-10s → %d\n", name, addr)
+		}
+	}
+}
+
+func printScopeVariables(scope *Dictionary) {
+	for _, val := range scope.Items {
+		vs := val.(VariableStructure)
+		fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
+	}
 }

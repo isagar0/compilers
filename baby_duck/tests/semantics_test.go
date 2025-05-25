@@ -281,16 +281,24 @@ func TestSemanticAccept2(t *testing.T) {
 
 		// —— Al final, imprimimos las tablas ——
 		fmt.Println("=== Tabla de variables globales ===")
-		semantics.Current().PrintOrdered()
+		for _, val := range semantics.Current().Items {
+			if vs, ok := val.(semantics.VariableStructure); ok {
+				fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
+			}
+		}
 
 		fmt.Println("\n=== Directorio de funciones y sus tablas locales ===")
-		for _, fname := range semantics.FunctionDirectory.Keys() {
+		for fname, entry := range semantics.FunctionDirectory.Items {
 			fmt.Printf("Función %s:\n", fname)
-			entry, _ := semantics.FunctionDirectory.Get(fname)
 			fs := entry.(semantics.FunctionStructure)
-			fs.VarTable.PrintOrdered()
+			for _, val := range fs.VarTable.Items {
+				if vs, ok := val.(semantics.VariableStructure); ok {
+					fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
+				}
+			}
 			fmt.Println()
 		}
+
 	}
 }
 

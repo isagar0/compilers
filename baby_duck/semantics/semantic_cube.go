@@ -49,36 +49,9 @@ var cube = SemanticCube{
 			">":  "bool",
 		},
 	},
-	"string": {
-		"string": {
-			"+":  "error",
-			"-":  "error",
-			"*":  "error",
-			"/":  "error",
-			"=":  "error",
-			"!=": "error",
-			"<":  "error",
-			">":  "error",
-		},
-		"int": {
-			"+":  "error",
-			"-":  "error",
-			"*":  "error",
-			"/":  "error",
-			"=":  "error",
-			"!=": "error",
-			"<":  "error",
-			">":  "error",
-		},
-		"float": {
-			"+":  "error",
-			"-":  "error",
-			"*":  "error",
-			"/":  "error",
-			"=":  "error",
-			"!=": "error",
-			"<":  "error",
-			">":  "error",
+	"bool": {
+		"bool": {
+			"!=": "bool",
 		},
 	},
 }
@@ -87,10 +60,6 @@ var cube = SemanticCube{
 func GetResultType(leftType, rightType, operator string) (string, error) {
 	// Busca directamente en el cubo semántico
 	if res, ok := cube[leftType][rightType][operator]; ok {
-		// Si la operación está marcada como inválida, marca error
-		if res == "error" {
-			return "", fmt.Errorf("semántico: operación inválida %s %s %s", leftType, operator, rightType)
-		}
 
 		// Devuelve el tipo
 		return res, nil
