@@ -445,10 +445,8 @@ CycleTail
       falseJump := falseJumpRaw.(int)
       returnJump := returnJumpRaw.(int)
 
-      // 👉 1. Generamos el GOTO después de ejecutar el cuerpo
       semantics.PushQuad("GOTO", "_", "_", returnJump)
 
-      // 👉 2. Hacemos backpatch del GOTOF para que salte al final del ciclo
       semantics.Quads[falseJump].Result = len(semantics.Quads)
 
       return nil, nil
