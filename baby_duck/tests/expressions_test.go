@@ -72,7 +72,7 @@ var testDataAccept3 = []*TI3{
 	}, // Accept 4: Prueba ciclo con simbolos relaciones
 }
 
-func TestSemanticAccept(t *testing.T) {
+func TestSemanticAccept3(t *testing.T) {
 	p := parser.NewParser()
 	for i, ts := range testDataAccept3 {
 		// Reiniciamos semántica antes de empezar

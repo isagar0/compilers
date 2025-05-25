@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-type TI3 struct {
+type TI4 struct {
 	src string
 }
 
-var testDataAccept3 = []*TI3{
+var testDataAccept4 = []*TI4{
 
 	{
 		`program SimpleIf;
@@ -125,7 +125,7 @@ var testDataAccept3 = []*TI3{
 
 func TestSemanticAccept(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range testDataAccept3 {
+	for i, ts := range testDataAccept4 {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 

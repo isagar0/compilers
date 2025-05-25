@@ -279,9 +279,9 @@ func TestSemanticAccept2(t *testing.T) {
 			continue
 		}
 
-		// —— Al final, imprimimos las tablas ——
+		// Imprimir las tablas
 		fmt.Println("=== Tabla de variables globales ===")
-		for _, val := range semantics.Current().Items {
+		for _, val := range semantics.Scopes.Current().Items {
 			if vs, ok := val.(semantics.VariableStructure); ok {
 				fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
 			}
@@ -298,6 +298,8 @@ func TestSemanticAccept2(t *testing.T) {
 			}
 			fmt.Println()
 		}
+
+		fmt.Println("================================================================================")
 
 	}
 }

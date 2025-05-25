@@ -181,11 +181,11 @@ FunctionHeader
           return nil, err
         }
         // 2) abro el scope local
-        semantics.EnterScope()
+        semantics.Scopes.EnterScope()
         // 3) declaro los parámetros en ese scope
         for _, p := range params {
           if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.ExitScope()
+            semantics.Scopes.ExitScope()
             return nil, err
           }
         }
@@ -205,11 +205,11 @@ Function
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params); err != nil {
-          semantics.ExitScope()
+          semantics.Scopes.ExitScope()
           return nil, err
         }
         // 2) cierro el scope local
-        semantics.ExitScope()
+        semantics.Scopes.ExitScope()
         return nil, nil
       }()
     >>
@@ -297,7 +297,7 @@ Assign
         name := string($0.(*token.Token).Lit)
 
         // Verifica que la variable exista
-        if _, exists := semantics.Current().Get(name); !exists {
+        if _, exists := semantics.Scopes.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
@@ -310,7 +310,7 @@ Assign
 
         // Generar el cuadruplo de asignación
         // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Current().Get(name)
+        raw, _ := semantics.Scopes.Current().Get(name)
         vs := raw.(semantics.VariableStructure)
         semantics.PushQuad("=", rightOp, "_", vs.Address)
 
@@ -672,7 +672,7 @@ Factor
         name := string($0.(*token.Token).Lit)
         //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
 
-        raw, exists := semantics.Current().Get(name)
+        raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
@@ -766,7 +766,7 @@ FCall
           } else {
             // 5b) Variable: buscar su tipo en el scope actual
             varName := string(arg.(*token.Token).Lit)
-            rawVar, okVar := semantics.Current().Get(varName)
+            rawVar, okVar := semantics.Scopes.Current().Get(varName)
             if okVar {
               vs := rawVar.(semantics.VariableStructure)
               argType = vs.Type

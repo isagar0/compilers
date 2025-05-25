@@ -19,9 +19,9 @@ func ResetSemanticState() {
 // -------------------------------------------- VARS --------------------------------------------
 // Reset: Crea una nuvea tabla global y sus scopes vacios
 func ResetVars() {
-	scopes = &ScopeManager{
-		global: NewDictionary(), // Scope global
-		stack:  []*Dictionary{}, // Pila soces locales vacio
+	Scopes = &ScopeManager{
+		global:  NewDictionary(), // Scope global
+		current: nil,             // Pila soces locales vacio
 	}
 }
 
@@ -35,7 +35,7 @@ func RegisterMainProgram(programName string) error {
 	// Registra el programa principal como una función sin parámetros
 	FunctionDirectory.Put(programName, FunctionStructure{
 		Name:     programName,
-		VarTable: Current(),
+		VarTable: Scopes.Current(),
 	})
 
 	//fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
@@ -45,7 +45,7 @@ func RegisterMainProgram(programName string) error {
 // VarDeclaration: Procesa la declaración de variables en el scope actual
 func VarDeclaration(ids []string, tipo string) error {
 	// Usa tabla activa del scope
-	tabla := Current()
+	tabla := Scopes.Current()
 
 	// Recorre cada identificador en la lista de variables a declarar
 	for _, id := range ids {
@@ -58,15 +58,15 @@ func VarDeclaration(ids []string, tipo string) error {
 		}
 
 		// Check parent scopes if in local scope
-		if tabla != scopes.global {
-			if _, exists := scopes.global.Get(id); exists {
+		if tabla != Scopes.global {
+			if _, exists := Scopes.global.Get(id); exists {
 				return fmt.Errorf("error: variable '%s' ya existe en scope global", id)
 			}
 		}
 
 		// Determina si es global o local
 		var segmento *SegmentGroup
-		if Current() == scopes.global {
+		if Scopes.Current() == Scopes.global {
 			segmento = &memory.Global
 			// fmt.Printf("Global var %s at %d\n", id, dir)
 		} else {
@@ -168,7 +168,7 @@ func FuncDeclaration(name string, params []VariableStructure) error {
 
 	for _, param := range params {
 		// Get the actual address from the local scope
-		if raw, exists := Current().Get(param.Name); exists {
+		if raw, exists := Scopes.Current().Get(param.Name); exists {
 			vs := raw.(VariableStructure)
 			AddressToName[vs.Address] = param.Name
 			// return fmt.Errorf("parameter %s already exists", param.Name)
@@ -177,7 +177,7 @@ func FuncDeclaration(name string, params []VariableStructure) error {
 	}
 
 	// Asocia la tabla local de variables (scope actual donde se declararon los params)
-	fs.VarTable = Current()
+	fs.VarTable = Scopes.Current()
 
 	// Actualiza el directorio
 	FunctionDirectory.Put(name, fs)

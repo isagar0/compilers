@@ -125,9 +125,11 @@ func PrintAddressTable() {
 
 	// First print variables from scopes
 	fmt.Println("\n---- Variables Globales ----")
-	PrintScopeVariables(scopes.global)
-	for _, scope := range scopes.stack {
-		PrintScopeVariables(scope)
+	PrintScopeVariables(Scopes.global)
+
+	if Scopes.current != nil {
+		fmt.Println("\n---- Variables del Scope Actual ----")
+		PrintScopeVariables(Scopes.current)
 	}
 
 	// Then print constants

@@ -255,11 +255,11 @@ var productionsTable = ProdTab{
           return nil, err
         }
         // 2) abro el scope local
-        semantics.EnterScope()
+        semantics.Scopes.EnterScope()
         // 3) declaro los parámetros en ese scope
         for _, p := range params {
           if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.ExitScope()
+            semantics.Scopes.ExitScope()
             return nil, err
           }
         }
@@ -281,11 +281,11 @@ var productionsTable = ProdTab{
           return nil, err
         }
         // 2) abro el scope local
-        semantics.EnterScope()
+        semantics.Scopes.EnterScope()
         // 3) declaro los parámetros en ese scope
         for _, p := range params {
           if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.ExitScope()
+            semantics.Scopes.ExitScope()
             return nil, err
           }
         }
@@ -301,11 +301,11 @@ var productionsTable = ProdTab{
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params); err != nil {
-          semantics.ExitScope()
+          semantics.Scopes.ExitScope()
           return nil, err
         }
         // 2) cierro el scope local
-        semantics.ExitScope()
+        semantics.Scopes.ExitScope()
         return nil, nil
       }() >>`,
 		Id:         "Function",
@@ -319,11 +319,11 @@ var productionsTable = ProdTab{
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params); err != nil {
-          semantics.ExitScope()
+          semantics.Scopes.ExitScope()
           return nil, err
         }
         // 2) cierro el scope local
-        semantics.ExitScope()
+        semantics.Scopes.ExitScope()
         return nil, nil
       }()
 		},
@@ -521,7 +521,7 @@ var productionsTable = ProdTab{
         name := string(X[0].(*token.Token).Lit)
 
         // Verifica que la variable exista
-        if _, exists := semantics.Current().Get(name); !exists {
+        if _, exists := semantics.Scopes.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
@@ -534,7 +534,7 @@ var productionsTable = ProdTab{
 
         // Generar el cuadruplo de asignación
         // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Current().Get(name)
+        raw, _ := semantics.Scopes.Current().Get(name)
         vs := raw.(semantics.VariableStructure)
         semantics.PushQuad("=", rightOp, "_", vs.Address)
 
@@ -551,7 +551,7 @@ var productionsTable = ProdTab{
         name := string(X[0].(*token.Token).Lit)
 
         // Verifica que la variable exista
-        if _, exists := semantics.Current().Get(name); !exists {
+        if _, exists := semantics.Scopes.Current().Get(name); !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
@@ -564,7 +564,7 @@ var productionsTable = ProdTab{
 
         // Generar el cuadruplo de asignación
         // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Current().Get(name)
+        raw, _ := semantics.Scopes.Current().Get(name)
         vs := raw.(semantics.VariableStructure)
         semantics.PushQuad("=", rightOp, "_", vs.Address)
 
@@ -1237,7 +1237,7 @@ var productionsTable = ProdTab{
         name := string(X[0].(*token.Token).Lit)
         //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
 
-        raw, exists := semantics.Current().Get(name)
+        raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
@@ -1257,7 +1257,7 @@ var productionsTable = ProdTab{
         name := string(X[0].(*token.Token).Lit)
         //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
 
-        raw, exists := semantics.Current().Get(name)
+        raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
@@ -1389,7 +1389,7 @@ var productionsTable = ProdTab{
           } else {
             // 5b) Variable: buscar su tipo en el scope actual
             varName := string(arg.(*token.Token).Lit)
-            rawVar, okVar := semantics.Current().Get(varName)
+            rawVar, okVar := semantics.Scopes.Current().Get(varName)
             if okVar {
               vs := rawVar.(semantics.VariableStructure)
               argType = vs.Type
@@ -1459,7 +1459,7 @@ var productionsTable = ProdTab{
           } else {
             // 5b) Variable: buscar su tipo en el scope actual
             varName := string(arg.(*token.Token).Lit)
-            rawVar, okVar := semantics.Current().Get(varName)
+            rawVar, okVar := semantics.Scopes.Current().Get(varName)
             if okVar {
               vs := rawVar.(semantics.VariableStructure)
               argType = vs.Type

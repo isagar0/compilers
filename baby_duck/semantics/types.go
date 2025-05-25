@@ -10,8 +10,8 @@ type Dictionary struct {
 
 // ScopeManager: Maneja la tabla global y una pila de scopes locales
 type ScopeManager struct {
-	global *Dictionary   // Scope global
-	stack  []*Dictionary // Pila scopes locales
+	global  *Dictionary // Scope global
+	current *Dictionary // Pila scopes locales
 }
 
 // VariableStructure: Estructura de una variable

@@ -73,7 +73,7 @@ func PushOperandDebug(value interface{}, tipo string) {
 		}
 	} else {
 		// Si es una variable, buscamos su dirección
-		raw, _ := Current().Get(fmt.Sprintf("%v", value))
+		raw, _ := Scopes.Current().Get(fmt.Sprintf("%v", value))
 		v := raw.(VariableStructure)
 		address = v.Address
 	}
