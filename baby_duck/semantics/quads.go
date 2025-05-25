@@ -206,8 +206,8 @@ func PrintQuads() {
 	}
 }
 
-// CleanStacks: Limpia todas las variables de los quads
-func CleanStacks() {
+// ResetStacks: Limpia todas las variables de los quads
+func ResetStacks() {
 	PilaO = NewStack()
 	PTypes = NewStack()
 	POper = NewStack()

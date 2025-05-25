@@ -1,42 +1,24 @@
 package semantics
 
-import (
-	"fmt"
-)
+import "fmt"
 
-// --------------------------------------- Inicialización ---------------------------------------
-var VarTable = NewDictionary()          // Tabla global de variables
-var FunctionDirectory = NewDictionary() // Directorio de funciones
-var memory = NewMemoryManager()         // Memoria de direcciones
-var AddressToName = map[int]string{}    // Traducir direcciones a nombre
-
-// ------------------------------------------ Limpiar ------------------------------------------
+// ------------------------------------------ LIMPIAR ------------------------------------------
 // ResetSemanticState: Limpia todo para un programa nuevo
 func ResetSemanticState() {
 	// Limpia diccionarios
-	Reset()
+	ResetVars()
 	FunctionDirectory = NewDictionary()
 
 	// Limpia pilas y cuadruplos
-	CleanStacks()
+	ResetStacks()
 
 	// Limpia direcciones
-	// Reset all memory segments
-	memory.Global.Ints.Reset()
-	memory.Global.Floats.Reset()
-	memory.Local.Ints.Reset()
-	memory.Local.Floats.Reset()
-	memory.Temp.Ints.Reset()
-	memory.Temp.Floats.Reset()
-	memory.Constant.Ints.Reset()
-	memory.Constant.Floats.Reset()
-	memory.Constant.Strings.Reset()
-	AddressToName = make(map[int]string)
+	ResetMemory()
 }
 
-// -------------------------------------------- Vars --------------------------------------------
+// -------------------------------------------- VARS --------------------------------------------
 // Reset: Crea una nuvea tabla global y sus scopes vacios
-func Reset() {
+func ResetVars() {
 	scopes = &ScopeManager{
 		global: NewDictionary(), // Scope global
 		stack:  []*Dictionary{}, // Pila soces locales vacio

@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+// --------------------------------------- DECLARACION ---------------------------------------
+var VarTable = NewDictionary()          // Tabla global de variables
+var FunctionDirectory = NewDictionary() // Directorio de funciones
+var memory = NewMemoryManager()         // Memoria de direcciones
+var AddressToName = map[int]string{}    // Traducir direcciones a nombre
+
 // --------------------------------------- DICTIONARY ---------------------------------------
 // NewDictionary: Constructor del diccionario
 func NewDictionary() *Dictionary {
@@ -32,10 +38,12 @@ func (d *Dictionary) Get(key string) (interface{}, bool) {
 
 // ----------------------------------------- MEMORY -----------------------------------------
 
+// NewMemorySegment: El siguiente espacio disponible
 func NewMemorySegment(start, end int) MemorySegment {
 	return MemorySegment{start: start, end: end, next: start}
 }
 
+// GetNext: Obtiene la siguiente dirección disponible
 func (m *MemorySegment) GetNext() (int, error) {
 	if m.next > m.end {
 		return -1, fmt.Errorf("memoria llena en el rango %d–%d", m.start, m.end)
@@ -45,10 +53,12 @@ func (m *MemorySegment) GetNext() (int, error) {
 	return addr, nil
 }
 
+// Reset: Reinicia el segmento, siguiente espacio disponible es start
 func (m *MemorySegment) Reset() {
 	m.next = m.start
 }
 
+// NewMemoryManager: Crea administrador de memoria con direcciones
 func NewMemoryManager() *MemoryManager {
 	return &MemoryManager{
 		Global: SegmentGroup{
@@ -72,6 +82,7 @@ func NewMemoryManager() *MemoryManager {
 	}
 }
 
+// GetConstAddress: Busca si ya existe, y si no, asigna una nueva dirección
 func GetConstAddress(literal string, tipo string) int {
 	var segment *MemorySegment
 
@@ -106,15 +117,15 @@ func GetConstAddress(literal string, tipo string) int {
 	return addr
 }
 
-// Tabla de direcciones
+// PrintAddressTable: Imprime tabla de direcciones
 func PrintAddressTable() {
 	fmt.Println("\n==== Tabla de direcciones virtuales ====")
 
 	// First print variables from scopes
 	fmt.Println("\n---- Variables Globales ----")
-	printScopeVariables(scopes.global)
+	PrintScopeVariables(scopes.global)
 	for _, scope := range scopes.stack {
-		printScopeVariables(scope)
+		PrintScopeVariables(scope)
 	}
 
 	// Then print constants
@@ -134,9 +145,28 @@ func PrintAddressTable() {
 	}
 }
 
-func printScopeVariables(scope *Dictionary) {
+// PrintScopeVariables: Imprimir las variables de un scope dado
+func PrintScopeVariables(scope *Dictionary) {
 	for _, val := range scope.Items {
 		vs := val.(VariableStructure)
 		fmt.Printf("%-10s → %-6d (%-6s)\n", vs.Name, vs.Address, vs.Type)
+	}
+}
+
+// ResetMemory: Limpia todos los segmentos de memoria
+func ResetMemory() {
+	memory.Global.Ints.Reset()
+	memory.Global.Floats.Reset()
+	memory.Local.Ints.Reset()
+	memory.Local.Floats.Reset()
+	memory.Temp.Ints.Reset()
+	memory.Temp.Floats.Reset()
+	memory.Temp.Bools.Reset()
+	memory.Constant.Ints.Reset()
+	memory.Constant.Floats.Reset()
+	memory.Constant.Strings.Reset()
+
+	for k := range AddressToName {
+		delete(AddressToName, k)
 	}
 }
