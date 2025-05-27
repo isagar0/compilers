@@ -78,14 +78,65 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 			vm.Memory[resultAddr] = div(left, right)
 		}
 
+	case "<", ">", "!=", "==":
+		left := vm.Memory[quad.Left.(int)]
+		right := vm.Memory[quad.Right.(int)]
+		resultAddr := quad.Result.(int)
+
+		// Convertir a floats para comparación
+		leftVal := toFloat(left)
+		rightVal := toFloat(right)
+
+		var result bool
+		switch quad.Oper {
+		case "<":
+			result = leftVal < rightVal
+		case ">":
+			result = leftVal > rightVal
+		case "!=":
+			result = leftVal != rightVal
+		case "==":
+			result = leftVal == rightVal
+		}
+
+		vm.Memory[resultAddr] = result
+
 	case "=": // Asignación
 		source := vm.Memory[quad.Left.(int)]
 		destAddr := quad.Result.(int)
 		vm.Memory[destAddr] = source
 
-	case "PRINT": // Imprimir valor
-		value := vm.Memory[quad.Left.(int)]
-		fmt.Printf("%v\n", value) // Funciona para int y float
+	case "GOTOF": // Salto si falso (false)
+		conditionAddr := quad.Left.(int)
+		condition := vm.Memory[conditionAddr].(bool) // Lee el valor booleano
+
+		// Si la condición es FALSA, salta a la dirección especificada
+		if !condition {
+			target := quad.Result.(int)
+			vm.IP = target // Modifica el IP para saltar
+		}
+
+	case "GOTO": // Salto incondicional
+		target := quad.Result.(int)
+		vm.IP = target
+
+	case "PRINT":
+		addr := quad.Left.(int)
+		// Si es una constante string (rango 10000-10999)
+		if addr >= 10000 && addr <= 10999 {
+			// Obtener el nombre de la constante (ej: "const_hola")
+			name, exists := AddressToName[addr]
+			if !exists {
+				panic("String no encontrada en AddressToName")
+			}
+			// Extraer el valor (ej: "hola" de "const_hola")
+			value := strings.TrimPrefix(name, "const_")
+			fmt.Println(value)
+		} else {
+			// Manejar otros tipos (int, float, bool)
+			value := vm.Memory[addr]
+			fmt.Println(value)
+		}
 
 	default:
 		panic("Operación no soportada: " + quad.Oper)

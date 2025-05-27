@@ -34,6 +34,44 @@ var testDataAccept4 = []*TI4{
             }
             end`,
 	}, // Accept 2: Ver que el orden de jerarquía funciona correctamente
+	{
+		`program SimpleIf;
+			var a, b : int;
+            main {
+                a = 3;
+                b = 2;
+                print(a != b);
+            }
+            end`,
+	}, // Accept 1: If simple
+	{
+		`program SimpleIf;
+			var a : int;
+            main {
+                a = 11;
+				if (a < 10) {
+					print(a);
+				}
+				else {
+					print("ELSE", 5>2, 8);
+				};
+            }
+            end`,
+	}, // Accept 1: If simple
+	{
+		`program withCycle;
+         var a, b : int;
+         main {
+			a = 1;
+			b = 4;
+            while (a < b) do {
+               a = a + 1;
+			   print(a);
+            };
+			print("Out of While");
+         }
+         end`,
+	}, // Accept 4: Uso de ciclo while-do
 }
 
 func TestSemanticAccept(t *testing.T) {
