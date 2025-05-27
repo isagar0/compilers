@@ -14,14 +14,26 @@ type TI4 struct {
 
 var testDataAccept4 = []*TI4{
 	{
-		`program myProgram;
-         var x, y: int;
-         main {
-            x = 1.2 + 2;
-            print(x);
-         }
-         end`,
-	}, // Accept 1: If simple
+		`program sumTest;
+			var a, b, c, d, e, f, g, h, j, k, l : int;
+            var sum : int;
+            main {
+                a = 1;
+                b = 2;
+                c = 3;
+                d = 4;
+                e = 5;
+                f = 6;
+                g = 7;
+                h = 8;
+                j = 10;
+                k = 11;
+                l = 12;
+                sum = ( ( a + b ) * c + d * e * f + k / h * j ) + g * l + h + j + ( a - c * d ) / f;
+				print(sum);
+            }
+            end`,
+	}, // Accept 2: Ver que el orden de jerarquía funciona correctamente
 }
 
 func TestSemanticAccept(t *testing.T) {
@@ -42,7 +54,8 @@ func TestSemanticAccept(t *testing.T) {
 		fmt.Println("\n===========================================================")
 
 		// Ejecutar cuádruplos
-		semantics.ExecuteQuads(semantics.Quads)
+		vm := semantics.NewVirtualMachine(semantics.Quads)
+		vm.Run() // ¡Esto ejecutará todos los cuádruplos!
 
 		fmt.Println("\n===========================================================")
 	}
