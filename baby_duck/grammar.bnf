@@ -241,15 +241,15 @@ FunctionHeader
   ;
 
 /* CUERPO de función: consume vars locales, cierra el scope y completa el registro */
-Function
-  : FunctionHeader Vars Body r_square_par semicolon
-    <<
+FunctionHeaderTwo
+  : FunctionHeader Vars
+  <<
       func() (Attrib, error) {
         // recupero lo que devolvió FunctionHeader
         info := X[0].(FuncInfo)
         localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
-        startQuad := semantics.GetCurrentQuad() 
-
+        startQuad := semantics.GetCurrentQuad()+1
+        
         fmt.Println("\n[DEBUG] Registrando función:", info.Name)
         fmt.Println("  - Parámetros declarados:", len(info.Params))
         fmt.Println("  - Variables locales contadas:", localVarCount)
@@ -260,7 +260,15 @@ Function
           semantics.Scopes.ExitScope()
           return nil, err
         }  
+        return nil, nil
+      }()
+    >>
+  ;
 
+Function
+  : FunctionHeaderTwo Body r_square_par semicolon
+    <<
+      func() (Attrib, error) {
         // Generar ENDFUNC aquí (dentro de cada función)
         semantics.PushQuad("ENDFUNC", "_", "_", "_")
 

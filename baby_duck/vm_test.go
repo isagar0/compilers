@@ -87,9 +87,17 @@ var debug = []*TI4{
 	                print(result);
 	            }
 	         ];
+			 void rest(a: int, b: int)[
+	            var result: int;
+	            {
+	                result = a - b;
+	                print(result);
+	            }
+	         ];
 	         main {
 			 	x = 2;
 	            sum(x,3);
+				rest(x,3);
 	         }
 	         end`,
 	}, // Accept 6: Funcion con variables globales y locales
