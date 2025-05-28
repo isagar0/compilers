@@ -29,6 +29,7 @@ type FunctionStructure struct {
 	ParamCount    int                 // Número de parámetros
 	LocalVarCount int                 // Variables locales
 	StartQuad     int                 // Cuadruplo inicial
+	TempCount     int                 // Temporales Usados
 }
 
 // ------------------------------------------ QUADS ------------------------------------------

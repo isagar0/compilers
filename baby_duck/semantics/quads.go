@@ -12,7 +12,7 @@ var (
 	PTypes  = NewStack()    // Tipos de operadores
 	POper   = NewStack()    // Operadores
 	Quads   []QuadStructure // Cuádruplos generados
-	tempVar int             // Contador para nombres de variables temporales
+	TempVar int             // Contador para nombres de variables temporales
 	PJumps  = NewStack()    // Stack para saltos pendientes
 )
 
@@ -88,12 +88,6 @@ func PushOp(op string) {
 	POper.Push(op)
 }
 
-// NewTemp: Genera el nombre de una variable temporal
-func NewTemp() string {
-	tempVar++
-	return fmt.Sprintf("t%d", tempVar)
-}
-
 // PushQuad: Agrega un cuádruplo a la lista global
 func PushQuad(oper string, left, right, res interface{}) {
 	Quads = append(Quads, QuadStructure{oper, left, right, res})
@@ -152,10 +146,13 @@ func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
 		switch resType {
 		case "int":
 			tempAddr, _ = memory.Temp.Ints.GetNext()
+			TempVar++
 		case "float":
 			tempAddr, _ = memory.Temp.Floats.GetNext()
+			TempVar++
 		case "bool":
 			tempAddr, _ = memory.Temp.Bools.GetNext()
+			TempVar++
 		}
 
 		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
@@ -215,5 +212,5 @@ func ResetStacks() {
 	PTypes = NewStack()
 	POper = NewStack()
 	Quads = []QuadStructure{}
-	tempVar = 0
+	TempVar = 0
 }

@@ -83,14 +83,14 @@ var debug = []*TI4{
 	         void sum(a: int, b: int)[
 	            var result: int;
 	            {
-	                result = a + b;
+	                result = a + b * 2 - 4 + 9;
 	                print(result);
 	            }
 	         ];
 			 void rest(a: int, b: int)[
 	            var result: int;
 	            {
-	                result = a - b;
+	                result = a - b * 5 / 2 + 20;
 	                print(result);
 	            }
 	         ];

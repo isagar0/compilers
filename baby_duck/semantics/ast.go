@@ -141,6 +141,7 @@ func RegisterFunction(name string) error {
 		Parameters: []VariableStructure{}, // Parametros (vacios)
 		VarTable:   localTable,            // Tabla local de variables
 		ParamCount: 0,
+		TempCount:  0,
 		StartQuad:  len(Quads),
 	})
 
@@ -168,7 +169,7 @@ func ValidateParams(params []VariableStructure) error {
 }
 
 // FuncDeclaration: Actualiza la entrada creada por RegisterFunction
-func FuncDeclaration(name string, params []VariableStructure, localVarCount, startQuad int) error {
+func FuncDeclaration(name string, params []VariableStructure, localVarCount, startQuad, tempCount int) error {
 	// Verifica que no haya parámetros duplicados
 	if err := ValidateParams(params); err != nil {
 		return err
@@ -200,6 +201,7 @@ func FuncDeclaration(name string, params []VariableStructure, localVarCount, sta
 	fs.ParamCount = len(params)      // Número de parámetros
 	fs.LocalVarCount = localVarCount // Variables locales
 	fs.StartQuad = startQuad         // Cuadruplo inicial
+	fs.TempCount = tempCount         // Numero temporales
 
 	// Asocia la tabla local de variables (scope actual donde se declararon los params)
 	fs.VarTable = Scopes.Current()
