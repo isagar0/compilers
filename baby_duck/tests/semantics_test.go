@@ -262,7 +262,7 @@ var testDataFail2 = []*TI2{
 				sum(1, 2);
 			}
 			end`,
-	}, // Fail 11: sum espera int float, recibe dos ints
+	}, // Fail 12: sum espera int float, recibe dos ints
 }
 
 func TestSemanticAccept2(t *testing.T) {

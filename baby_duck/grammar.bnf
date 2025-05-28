@@ -835,55 +835,54 @@ FCall
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
-        // ------------------- PARAMS ---------------------------------------------------------
-        // 2) Recuperar slice de argumentos
-        args, ok := $2.([]Attrib)
-        if !ok {
-          return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", $2)
-        }
-
-        // 4) Aridad correcta?
-        if len(args) != len(fs.Parameters) {
-          return nil, fmt.Errorf(
-            "error: función '%s' espera %d argumentos, recibió %d",
-            name, len(fs.Parameters), len(args),
-          )
-        }
-
-        // 5) Verificar tipo de cada argumento
-        for i, arg := range args {
-          var argType string
-
-          // 5a) Literal numérico
-          if tokArg, ok := arg.(*token.Token); ok {
-            lit := string(tokArg.Lit)
-            if strings.Contains(lit, ".") {
-              argType = "float"
-            } else {
-              argType = "int"
-            }
-          } else {
-            // 5b) Variable: buscar su tipo en el scope actual
-            varName := string(arg.(*token.Token).Lit)
-            rawVar, okVar := semantics.Scopes.Current().Get(varName)
-            if okVar {
-              vs := rawVar.(semantics.VariableStructure)
-              argType = vs.Type
-            } else {
-              // si no está, el chequeo de existencia ya fallará en Assign/Factor
-              argType = "unknown"
-            }
-          }
-
-          expected := fs.Parameters[i].Type
-          if argType != expected {
+        n := len(fs.Parameters)
+        args, _ := $2.([]Attrib)
+        
+        // 1. Verificar aridad usando las pilas
+        if len(args) != n {
             return nil, fmt.Errorf(
-              "error: función '%s' espera %s en el parámetro %d, recibió %s",
-              name, expected, i+1, argType,
+                "error: función '%s' espera %d argumentos, recibió %d",
+                name, n, len(args),
             )
-          }
         }
 
+        argsAddr := make([]interface{}, n)
+        argsType := make([]string, n)
+
+        // 2. Sacar argumentos de las pilas (en orden inverso)
+        for i := n - 1; i >= 0; i-- {
+            addr, err := semantics.PilaO.Pop()
+            if err != nil {
+                return nil, fmt.Errorf("error al obtener argumento %d: %v", i+1, err)
+            }
+            
+            tipoRaw, err := semantics.PTypes.Pop()
+            if err != nil {
+                return nil, fmt.Errorf("error al obtener tipo %d: %v", i+1, err)
+            }
+            
+            tipo, ok := tipoRaw.(string)
+            if !ok {
+                return nil, fmt.Errorf("tipo inválido para argumento %d", i+1)
+            }
+            
+            argsAddr[i] = addr
+            argsType[i] = tipo
+        }
+
+        // 3. Verificar tipos y generar PARAMETER
+        for k := 0; k < n; k++ {
+            expectedType := fs.Parameters[k].Type
+            if argsType[k] != expectedType {
+                return nil, fmt.Errorf(
+                    "error: parámetro %d tipo incorrecto, esperaba %s, obtuvo %s",
+                    k+1, expectedType, argsType[k],
+                )
+            }
+            semantics.PushQuad("PARAMETER", argsAddr[k], "_", k+1)
+        }
+
+        // 4. Generar GOSUB
         semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
 
         return $0, nil
