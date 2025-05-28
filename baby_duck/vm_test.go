@@ -81,9 +81,10 @@ var debug = []*TI4{
 		`program withFunc;
 			 var x : int;
 	         void sum(a: int, b: int)[
-	            var result: int;
+	            var result, result2: int;
 	            {
-	                result = a + b * 2 - 4 + 9;
+	                result = a + b * 2;
+					result2 = 8 / 4 * (3 + 1);
 	                print(result);
 	            }
 	         ];
@@ -96,7 +97,8 @@ var debug = []*TI4{
 	         ];
 	         main {
 			 	x = 2;
-	            sum(x,3);
+	            sum(x+2,3);
+				print("-------");
 				rest(x,3);
 	         }
 	         end`,

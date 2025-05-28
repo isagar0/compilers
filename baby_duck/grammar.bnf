@@ -798,11 +798,9 @@ Cte
 
 
 /* F_CALL */
-/* F_CALL */
-/* F_CALL */
-FCall
-  : id l_round_par FCallList r_round_par semicolon
-    <<
+FEra 
+  : id
+  <<
       func() (Attrib, error) {
         // 1) Extraer nombre de la función
         fnTok, ok := $0.(*token.Token)
@@ -811,18 +809,37 @@ FCall
         }
         name := string(fnTok.Lit)
 
+        // 3) Comprobar que la función exista
+        _, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+
+        // Tamaño = variables locales + temporales + parámetros
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+        semantics.PushQuad("ERA", "_", "_", size)
+
+        return $0, nil
+      }()
+    >>
+  ;
+
+FCall
+  : FEra l_round_par FCallList r_round_par semicolon
+    <<
+      func() (Attrib, error) {
+        fnTok := $0.(*token.Token)
+        name := string(fnTok.Lit)
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+
         // 2) Recuperar slice de argumentos
         args, ok := $2.([]Attrib)
         if !ok {
           return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", $2)
         }
-
-        // 3) Comprobar que la función exista
-        raw, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-        fs := raw.(semantics.FunctionStructure)
 
         // 4) Aridad correcta?
         if len(args) != len(fs.Parameters) {

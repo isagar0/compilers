@@ -1497,7 +1497,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `FCall : id l_round_par FCallList r_round_par semicolon	<< func() (Attrib, error) {
+		String: `FEra : id	<< func() (Attrib, error) {
         // 1) Extraer nombre de la función
         fnTok, ok := X[0].(*token.Token)
         if !ok {
@@ -1505,18 +1505,61 @@ var productionsTable = ProdTab{
         }
         name := string(fnTok.Lit)
 
+        // 3) Comprobar que la función exista
+        _, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+
+        // Tamaño = variables locales + temporales + parámetros
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+        semantics.PushQuad("ERA", "_", "_", size)
+
+        return X[0], nil
+      }() >>`,
+		Id:         "FEra",
+		NTType:     44,
+		Index:      71,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return func() (Attrib, error) {
+        // 1) Extraer nombre de la función
+        fnTok, ok := X[0].(*token.Token)
+        if !ok {
+          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
+        }
+        name := string(fnTok.Lit)
+
+        // 3) Comprobar que la función exista
+        _, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+
+        // Tamaño = variables locales + temporales + parámetros
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+        semantics.PushQuad("ERA", "_", "_", size)
+
+        return X[0], nil
+      }()
+		},
+	},
+	ProdTabEntry{
+		String: `FCall : FEra l_round_par FCallList r_round_par semicolon	<< func() (Attrib, error) {
+        fnTok := X[0].(*token.Token)
+        name := string(fnTok.Lit)
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+
         // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
           return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
         }
-
-        // 3) Comprobar que la función exista
-        raw, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-        fs := raw.(semantics.FunctionStructure)
 
         // 4) Aridad correcta?
         if len(args) != len(fs.Parameters) {
@@ -1563,30 +1606,21 @@ var productionsTable = ProdTab{
         return X[0], nil
       }() >>`,
 		Id:         "FCall",
-		NTType:     44,
-		Index:      71,
+		NTType:     45,
+		Index:      72,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // 1) Extraer nombre de la función
-        fnTok, ok := X[0].(*token.Token)
-        if !ok {
-          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
-        }
+        fnTok := X[0].(*token.Token)
         name := string(fnTok.Lit)
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
 
         // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
           return nil, fmt.Errorf("esperaba []Attrib en FCallList, pero fue %T", X[2])
         }
-
-        // 3) Comprobar que la función exista
-        raw, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-        fs := raw.(semantics.FunctionStructure)
 
         // 4) Aridad correcta?
         if len(args) != len(fs.Parameters) {
@@ -1641,8 +1675,8 @@ var productionsTable = ProdTab{
           return append([]Attrib{first}, tail...), nil
         }() >>`,
 		Id:         "FCallList",
-		NTType:     45,
-		Index:      72,
+		NTType:     46,
+		Index:      73,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
@@ -1655,8 +1689,8 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `FCallList : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallList",
-		NTType:     45,
-		Index:      73,
+		NTType:     46,
+		Index:      74,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return []Attrib{}, nil
@@ -1681,8 +1715,8 @@ var productionsTable = ProdTab{
           return append([]Attrib{arg}, more...), nil
         }() >>`,
 		Id:         "FCallListTail",
-		NTType:     46,
-		Index:      74,
+		NTType:     47,
+		Index:      75,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
@@ -1707,8 +1741,8 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `FCallListTail : "empty"	<< []Attrib{}, nil >>`,
 		Id:         "FCallListTail",
-		NTType:     46,
-		Index:      75,
+		NTType:     47,
+		Index:      76,
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return []Attrib{}, nil
