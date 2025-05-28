@@ -23,9 +23,12 @@ type VariableStructure struct {
 
 // FunctionStructure: Estructura de una función
 type FunctionStructure struct {
-	Name       string              // Nombre
-	Parameters []VariableStructure // Lista de parametros
-	VarTable   *Dictionary         // Variables locales (scope local)
+	Name          string              // Nombre
+	Parameters    []VariableStructure // Lista de parametros
+	VarTable      *Dictionary         // Variables locales (scope local)
+	ParamCount    int                 // Número de parámetros
+	LocalVarCount int                 // Variables locales
+	StartQuad     int                 // Cuadruplo inicial
 }
 
 // ------------------------------------------ QUADS ------------------------------------------

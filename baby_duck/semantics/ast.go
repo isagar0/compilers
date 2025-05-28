@@ -32,11 +32,16 @@ func RegisterMainProgram(programName string) error {
 		return fmt.Errorf("error: el programa '%s' ya ha sido declarado", programName)
 	}
 
-	// Registra el programa principal como una función sin parámetros
-	FunctionDirectory.Put(programName, FunctionStructure{
-		Name:     programName,
-		VarTable: Scopes.Current(),
-	})
+	/*
+		// Registra el programa principal como una función sin parámetros
+		FunctionDirectory.Put(programName, FunctionStructure{
+			Name:       programName,
+			Parameters: []VariableStructure{},
+			VarTable:   Scopes.global,
+			ParamCount: 0,
+			StartQuad:  0,
+		})
+	*/
 
 	//fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
 	return nil
@@ -94,6 +99,11 @@ func VarDeclaration(ids []string, tipo string) error {
 		})
 		AddressToName[dir] = id
 		//fmt.Printf("Declared %s at address %d (type %s)\n", id, dir, tipo)
+		/*scope := "global"
+		if Scopes.Current() != Scopes.global {
+			scope = "local"
+		}
+		fmt.Printf("[DEBUG] Declaradas variables %v en scope %s (tipo %s)\n", ids, scope, tipo)*/
 	}
 
 	/*
@@ -103,6 +113,12 @@ func VarDeclaration(ids []string, tipo string) error {
 		fmt.Println(">>> Fin del scope actual")
 	*/
 
+	return nil
+}
+
+// Registra el nombre del programa (no es una función)
+func RegisterProgramName(name string) error {
+	// Opcional: Almacenar en una estructura separada si es necesario
 	return nil
 }
 
@@ -124,7 +140,11 @@ func RegisterFunction(name string) error {
 		Name:       name,                  // Nombre
 		Parameters: []VariableStructure{}, // Parametros (vacios)
 		VarTable:   localTable,            // Tabla local de variables
+		ParamCount: 0,
+		StartQuad:  len(Quads),
 	})
+
+	//fmt.Printf("[DEBUG] RegisterFunction: %d\n", len(Quads))
 
 	return nil
 }
@@ -148,7 +168,7 @@ func ValidateParams(params []VariableStructure) error {
 }
 
 // FuncDeclaration: Actualiza la entrada creada por RegisterFunction
-func FuncDeclaration(name string, params []VariableStructure) error {
+func FuncDeclaration(name string, params []VariableStructure, localVarCount, startQuad int) error {
 	// Verifica que no haya parámetros duplicados
 	if err := ValidateParams(params); err != nil {
 		return err
@@ -176,6 +196,11 @@ func FuncDeclaration(name string, params []VariableStructure) error {
 		}
 	}
 
+	// Asigna los nuevos campos
+	fs.ParamCount = len(params)      // Número de parámetros
+	fs.LocalVarCount = localVarCount // Variables locales
+	fs.StartQuad = startQuad         // Cuadruplo inicial
+
 	// Asocia la tabla local de variables (scope actual donde se declararon los params)
 	fs.VarTable = Scopes.Current()
 
@@ -183,4 +208,20 @@ func FuncDeclaration(name string, params []VariableStructure) error {
 	FunctionDirectory.Put(name, fs)
 
 	return nil
+}
+
+// CountVars: Cuenta variables en el scope actual
+func (d *Dictionary) CountVars() int {
+	count := 0
+	for _, v := range d.Items {
+		if _, ok := v.(VariableStructure); ok {
+			count++
+		}
+	}
+	return count
+}
+
+// GetCurrentQuad: Obtiene el índice del último cuadruplo generado
+func GetCurrentQuad() int {
+	return len(Quads) - 1
 }

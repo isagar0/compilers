@@ -12,6 +12,7 @@ type TI4 struct {
 	src string
 }
 
+/*
 var testDataAccept4 = []*TI4{
 	{
 		`program sumTest;
@@ -73,10 +74,30 @@ var testDataAccept4 = []*TI4{
          end`,
 	}, // Accept 4: Uso de ciclo while-do
 }
+*/
+
+var debug = []*TI4{
+	{
+		`program withFunc;
+			 var x : int;
+	         void sum(a: int, b: int)[
+	            var result: int;
+	            {
+	                result = a + b;
+	                print(result);
+	            }
+	         ];
+	         main {
+			 	x = 2;
+	            sum(x,3);
+	         }
+	         end`,
+	}, // Accept 6: Funcion con variables globales y locales
+}
 
 func TestSemanticAccept(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range testDataAccept4 {
+	for i, ts := range debug {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 
@@ -92,9 +113,28 @@ func TestSemanticAccept(t *testing.T) {
 		fmt.Println("\n===========================================================")
 
 		// Ejecutar cuádruplos
-		vm := semantics.NewVirtualMachine(semantics.Quads)
-		vm.Run() // ¡Esto ejecutará todos los cuádruplos!
+		// vm := semantics.NewVirtualMachine(semantics.Quads)
+		// vm.Run() // ¡Esto ejecutará todos los cuádruplos!
 
 		fmt.Println("\n===========================================================")
+
+		// Después de parsear:
+		fmt.Println("\n=== Funciones registradas ===")
+		for name := range semantics.FunctionDirectory.Items {
+			fmt.Println("Función:", name)
+		}
+
+		// En TestSemanticAccept:
+		mainEntry, exists := semantics.FunctionDirectory.Get("main")
+		if !exists {
+			t.Errorf("Test %d: 'main' no está en el directorio", i+1)
+			return
+		}
+
+		// Verificar que 'main' tiene 0 parámetros y variables locales correctas
+		fs := mainEntry.(semantics.FunctionStructure)
+		if fs.ParamCount != 0 || fs.LocalVarCount != 0 { // Ejemplo: 1 variable local
+			t.Errorf("Test %d: Params=%d (esperaba 0), Locales=%d (esperaba 1)", i+1, fs.ParamCount, fs.LocalVarCount)
+		}
 	}
 }

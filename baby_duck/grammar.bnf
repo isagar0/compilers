@@ -71,14 +71,60 @@ r_square_par : ']' ;
 
 /* PROGRAM */
 Program
-  : program id semicolon Vars FunctionList main Body end
+  : PBody PTail
+  ;
+
+PBody
+  : PHeader Vars FunctionList main
     <<
       func() (Attrib, error) {
-        token := $1.(*token.Token)
-        name := string(token.Lit)
-        if err := semantics.RegisterMainProgram(name); err != nil {
+        // 2. Registra 'main' como función en el directorio
+        if err := semantics.RegisterFunction("main"); err != nil {
           return nil, err
         }
+
+        // Recuperar gotoMainQuad desde PHeader ($0)
+        gotoMainQuad := $0.(int)
+
+        // 3. Obtener la dirección de inicio de main
+        mainEntry, _ := semantics.FunctionDirectory.Get("main")
+        fsMain := mainEntry.(semantics.FunctionStructure)
+        startMain := fsMain.StartQuad
+
+        // 4. Actualizar el GOTO con la dirección correcta
+        semantics.Quads[gotoMainQuad].Result = startMain
+
+        return nil, nil
+      }()
+    >>
+  ;
+
+PHeader
+  : program id semicolon
+  <<
+    func() (Attrib, error) {
+      token := $1.(*token.Token)
+      name := string(token.Lit)
+      if err := semantics.RegisterMainProgram(name); err != nil {
+        return nil, err
+      }
+
+      // 1. Generar GOTO main (target temporal -1)
+        semantics.PushQuad("GOTO MAIN", "_", "_", -1)
+        gotoMainQuad := len(semantics.Quads) - 1
+
+      return gotoMainQuad, nil
+      }()
+  >>
+  ;
+
+PTail
+  : Body end
+  <<
+      func() (Attrib, error) {
+        // 2) Generar ENDFUNC
+        semantics.PushQuad("END", "_", "_", "_")
+
         return nil, nil
       }()
     >>
@@ -201,12 +247,23 @@ Function
       func() (Attrib, error) {
         // recupero lo que devolvió FunctionHeader
         info := X[0].(FuncInfo)
+        localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
+        startQuad := semantics.GetCurrentQuad() 
+
+        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
+        fmt.Println("  - Parámetros declarados:", len(info.Params))
+        fmt.Println("  - Variables locales contadas:", localVarCount)
+        fmt.Println("  - Cuadruplo inicial:", startQuad)
 
         // 1) actualizo la entrada con params y VarTable local
-        if err := semantics.FuncDeclaration(info.Name, info.Params); err != nil {
+        if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad); err != nil {
           semantics.Scopes.ExitScope()
           return nil, err
-        }
+        }  
+
+        // Generar ENDFUNC aquí (dentro de cada función)
+        semantics.PushQuad("ENDFUNC", "_", "_", "_")
+
         // 2) cierro el scope local
         semantics.Scopes.ExitScope()
         return nil, nil
