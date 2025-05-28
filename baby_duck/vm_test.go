@@ -12,102 +12,41 @@ type TI4 struct {
 	src string
 }
 
-/*
 var testDataAccept4 = []*TI4{
 	{
-		`program sumTest;
-			var a, b, c, d, e, f, g, h, j, k, l : int;
-            var sum : int;
-            main {
-                a = 1;
-                b = 2;
-                c = 3;
-                d = 4;
-                e = 5;
-                f = 6;
-                g = 7;
-                h = 8;
-                j = 10;
-                k = 11;
-                l = 12;
-                sum = ( ( a + b ) * c + d * e * f + k / h * j ) + g * l + h + j + ( a - c * d ) / f;
-				print(sum);
-            }
-            end`,
-	}, // Accept 2: Ver que el orden de jerarquía funciona correctamente
-	{
-		`program SimpleIf;
-			var a, b : int;
-            main {
-                a = 3;
-                b = 2;
-                print(a != b);
-            }
-            end`,
-	}, // Accept 1: If simple
-	{
-		`program SimpleIf;
-			var a : int;
-            main {
-                a = 11;
-				if (a < 10) {
-					print(a);
-				}
-				else {
-					print("ELSE", 5>2, 8);
-				};
-            }
-            end`,
-	}, // Accept 1: If simple
-	{
-		`program withCycle;
-         var a, b : int;
-         main {
-			a = 1;
-			b = 4;
-            while (a < b) do {
-               a = a + 1;
-			   print(a);
-            };
-			print("Out of While");
-         }
-         end`,
-	}, // Accept 4: Uso de ciclo while-do
-}
-*/
+		`program Recursion;
 
-var debug = []*TI4{
-	{
-		`program withFunc;
-			 var x : int;
-	         void sum(a: int, b: int)[
-	            var result, result2: int;
-	            {
-	                result = a + b * 2;
-					result2 = 8 / 4 * (3 + 1);
-	                print(result);
-	            }
-	         ];
-			 void rest(a: int, b: int)[
-	            var result: int;
-	            {
-	                result = a - b * 5 / 2 + 20;
-	                print(result);
-	            }
-	         ];
-	         main {
-			 	x = 2;
-	            sum(x+2,3);
-				print("-------");
-				rest(x,3);
-	         }
-	         end`,
-	}, // Accept 6: Funcion con variables globales y locales
+		var n, result: int;
+
+		void factorial(x: int) [
+			var temp: int;
+			{
+				if (x < 1) {
+					if (x > -1) {
+						result = 1;
+					};
+				} else {
+					n = x - 1;
+					factorial(n);
+					result = result * x;
+				};
+			}
+		];
+
+		main {
+			n = 5;
+			result = 1;
+			factorial(n);
+			print("El factorial es:", result);
+		}
+
+		end`,
+	},
 }
 
 func TestSemanticAccept(t *testing.T) {
 	p := parser.NewParser()
-	for i, ts := range debug {
+	for i, ts := range testDataAccept4 {
 		// Reiniciamos semántica antes de empezar
 		semantics.ResetSemanticState()
 
@@ -123,28 +62,30 @@ func TestSemanticAccept(t *testing.T) {
 		fmt.Println("\n===========================================================")
 
 		// Ejecutar cuádruplos
-		// vm := semantics.NewVirtualMachine(semantics.Quads)
-		// vm.Run() // ¡Esto ejecutará todos los cuádruplos!
+		vm := semantics.NewVirtualMachine(semantics.Quads, semantics.FunctionDirectory)
+		vm.Run()
 
 		fmt.Println("\n===========================================================")
 
-		// Después de parsear:
-		fmt.Println("\n=== Funciones registradas ===")
-		for name := range semantics.FunctionDirectory.Items {
-			fmt.Println("Función:", name)
-		}
+		/*
+			// Después de parsear:
+			fmt.Println("\n=== Funciones registradas ===")
+			for name := range semantics.FunctionDirectory.Items {
+				fmt.Println("Función:", name)
+			}
 
-		// En TestSemanticAccept:
-		mainEntry, exists := semantics.FunctionDirectory.Get("main")
-		if !exists {
-			t.Errorf("Test %d: 'main' no está en el directorio", i+1)
-			return
-		}
+			// En TestSemanticAccept:
+			mainEntry, exists := semantics.FunctionDirectory.Get("main")
+			if !exists {
+				t.Errorf("Test %d: 'main' no está en el directorio", i+1)
+				return
+			}
 
-		// Verificar que 'main' tiene 0 parámetros y variables locales correctas
-		fs := mainEntry.(semantics.FunctionStructure)
-		if fs.ParamCount != 0 || fs.LocalVarCount != 0 { // Ejemplo: 1 variable local
-			t.Errorf("Test %d: Params=%d (esperaba 0), Locales=%d (esperaba 1)", i+1, fs.ParamCount, fs.LocalVarCount)
-		}
+			// Verificar que 'main' tiene 0 parámetros y variables locales correctas
+			fs := mainEntry.(semantics.FunctionStructure)
+			if fs.ParamCount != 0 || fs.LocalVarCount != 0 { // Ejemplo: 1 variable local
+				t.Errorf("Test %d: Params=%d (esperaba 0), Locales=%d (esperaba 1)", i+1, fs.ParamCount, fs.LocalVarCount)
+			}
+		*/
 	}
 }

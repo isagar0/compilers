@@ -105,7 +105,7 @@ var productionsTable = ProdTab{
       }
 
       // 1. Generar GOTO main (target temporal -1)
-        semantics.PushQuad("GOTO MAIN", "_", "_", -1)
+        semantics.PushQuad("GOTO", "MAIN", "_", -1)
         gotoMainQuad := len(semantics.Quads) - 1
 
       return gotoMainQuad, nil
@@ -123,7 +123,7 @@ var productionsTable = ProdTab{
       }
 
       // 1. Generar GOTO main (target temporal -1)
-        semantics.PushQuad("GOTO MAIN", "_", "_", -1)
+        semantics.PushQuad("GOTO", "MAIN", "_", -1)
         gotoMainQuad := len(semantics.Quads) - 1
 
       return gotoMainQuad, nil
@@ -384,11 +384,6 @@ var productionsTable = ProdTab{
         info := X[0].(FuncInfo)
         localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
         startQuad := semantics.GetCurrentQuad()+1
-        
-        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
-        fmt.Println("  - Parámetros declarados:", len(info.Params))
-        fmt.Println("  - Variables locales contadas:", localVarCount)
-        fmt.Println("  - Cuadruplo inicial:", startQuad)
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
@@ -408,11 +403,6 @@ var productionsTable = ProdTab{
         info := X[0].(FuncInfo)
         localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
         startQuad := semantics.GetCurrentQuad()+1
-        
-        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
-        fmt.Println("  - Parámetros declarados:", len(info.Params))
-        fmt.Println("  - Variables locales contadas:", localVarCount)
-        fmt.Println("  - Cuadruplo inicial:", startQuad)
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
