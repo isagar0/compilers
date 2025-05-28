@@ -1555,6 +1555,7 @@ var productionsTable = ProdTab{
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // ------------------- PARAMS ---------------------------------------------------------
         // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
@@ -1602,6 +1603,8 @@ var productionsTable = ProdTab{
             )
           }
         }
+
+        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
 
         return X[0], nil
       }() >>`,
@@ -1616,6 +1619,7 @@ var productionsTable = ProdTab{
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // ------------------- PARAMS ---------------------------------------------------------
         // 2) Recuperar slice de argumentos
         args, ok := X[2].([]Attrib)
         if !ok {
@@ -1663,6 +1667,8 @@ var productionsTable = ProdTab{
             )
           }
         }
+
+        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
 
         return X[0], nil
       }()

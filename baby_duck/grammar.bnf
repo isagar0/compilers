@@ -835,6 +835,7 @@ FCall
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // ------------------- PARAMS ---------------------------------------------------------
         // 2) Recuperar slice de argumentos
         args, ok := $2.([]Attrib)
         if !ok {
@@ -882,6 +883,8 @@ FCall
             )
           }
         }
+
+        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
 
         return $0, nil
       }()
