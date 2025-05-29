@@ -446,6 +446,12 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Assign : id assign Expression semicolon	<< func() (Attrib, error) {
+        tokenID := X[0].(*token.Token)
+        name := string(tokenID.Lit)
+        // Verificar si la variable está declarada
+        if _, exists := semantics.Scopes.Current().Get(name); !exists {
+            return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
         semantics.HandleAssign(X[0]) 
         return nil, nil
       }() >>`,
@@ -455,6 +461,12 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
+        tokenID := X[0].(*token.Token)
+        name := string(tokenID.Lit)
+        // Verificar si la variable está declarada
+        if _, exists := semantics.Scopes.Current().Get(name); !exists {
+            return nil, fmt.Errorf("error: variable '%s' no declarada", name)
+        }
         semantics.HandleAssign(X[0]) 
         return nil, nil
       }()

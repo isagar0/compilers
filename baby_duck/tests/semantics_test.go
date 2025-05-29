@@ -203,7 +203,7 @@ var testDataFail2 = []*TI2{
 				x = 5;
 			}
 			end`,
-	}, // Fail 6: Asignación a 'x' no declarada -> DID NOT PRODUCE EXPECTED ERROR
+	}, // Fail 6: Asignación a 'x' no declarada
 	{
 		`program useUndeclExpr;
 			var x: int;
