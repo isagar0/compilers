@@ -46,22 +46,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `PBody : PHeader Vars FunctionList main	<< func() (Attrib, error) {
-        // 2. Registra 'main' como función en el directorio
-        if err := semantics.RegisterFunction("main"); err != nil {
-          return nil, err
-        }
-
-        // Recuperar gotoMainQuad desde PHeader (X[0])
-        gotoMainQuad := X[0].(int)
-
-        // 3. Obtener la dirección de inicio de main
-        mainEntry, _ := semantics.FunctionDirectory.Get("main")
-        fsMain := mainEntry.(semantics.FunctionStructure)
-        startMain := fsMain.StartQuad
-
-        // 4. Actualizar el GOTO con la dirección correcta
-        semantics.Quads[gotoMainQuad].Result = startMain
-
+        semantics.HandlePBody(X[0])
         return nil, nil
       }() >>`,
 		Id:         "PBody",
@@ -70,22 +55,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // 2. Registra 'main' como función en el directorio
-        if err := semantics.RegisterFunction("main"); err != nil {
-          return nil, err
-        }
-
-        // Recuperar gotoMainQuad desde PHeader (X[0])
-        gotoMainQuad := X[0].(int)
-
-        // 3. Obtener la dirección de inicio de main
-        mainEntry, _ := semantics.FunctionDirectory.Get("main")
-        fsMain := mainEntry.(semantics.FunctionStructure)
-        startMain := fsMain.StartQuad
-
-        // 4. Actualizar el GOTO con la dirección correcta
-        semantics.Quads[gotoMainQuad].Result = startMain
-
+        semantics.HandlePBody(X[0])
         return nil, nil
       }()
 		},
@@ -638,16 +608,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `CycleExpression : l_round_par Expression r_round_par	<< func() (Attrib, error) {
-      condAddr, _ := semantics.PilaO.Pop()
-      condType, _ := semantics.PTypes.Pop()
-
-      if condType != "bool" {
-        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
-      }
-
-      // Genera GOTOF, y guarda su índice
-      semantics.PushQuad("GOTOF", condAddr, "_", -1)
-      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      semantics.HandleCycleExpression()
       return nil, nil
     }() >>`,
 		Id:         "CycleExpression",
@@ -656,16 +617,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-      condAddr, _ := semantics.PilaO.Pop()
-      condType, _ := semantics.PTypes.Pop()
-
-      if condType != "bool" {
-        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
-      }
-
-      // Genera GOTOF, y guarda su índice
-      semantics.PushQuad("GOTOF", condAddr, "_", -1)
-      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      semantics.HandleCycleExpression()
       return nil, nil
     }()
 		},
@@ -1053,8 +1005,6 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Factor : id	<< func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
-        //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
-
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
@@ -1063,7 +1013,6 @@ var productionsTable = ProdTab{
         vs := raw.(semantics.VariableStructure)
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
-        // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil
       }() >>`,
 		Id:         "Factor",
@@ -1073,8 +1022,6 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
-        //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
-
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
@@ -1083,7 +1030,6 @@ var productionsTable = ProdTab{
         vs := raw.(semantics.VariableStructure)
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
-        // devolvemos el token para que la propia producción lo use en la AST
         return X[0], nil
       }()
 		},

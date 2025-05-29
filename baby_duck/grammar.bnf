@@ -72,22 +72,7 @@ PBody
   : PHeader Vars FunctionList main
     <<
       func() (Attrib, error) {
-        // 2. Registra 'main' como función en el directorio
-        if err := semantics.RegisterFunction("main"); err != nil {
-          return nil, err
-        }
-
-        // Recuperar gotoMainQuad desde PHeader ($0)
-        gotoMainQuad := $0.(int)
-
-        // 3. Obtener la dirección de inicio de main
-        mainEntry, _ := semantics.FunctionDirectory.Get("main")
-        fsMain := mainEntry.(semantics.FunctionStructure)
-        startMain := fsMain.StartQuad
-
-        // 4. Actualizar el GOTO con la dirección correcta
-        semantics.Quads[gotoMainQuad].Result = startMain
-
+        semantics.HandlePBody($0)
         return nil, nil
       }()
     >>
@@ -360,16 +345,7 @@ CycleExpression
   : l_round_par Expression r_round_par
   <<
     func() (Attrib, error) {
-      condAddr, _ := semantics.PilaO.Pop()
-      condType, _ := semantics.PTypes.Pop()
-
-      if condType != "bool" {
-        return nil, fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
-      }
-
-      // Genera GOTOF, y guarda su índice
-      semantics.PushQuad("GOTOF", condAddr, "_", -1)
-      semantics.PJumps.Push(len(semantics.Quads) - 1)
+      semantics.HandleCycleExpression()
       return nil, nil
     }()
   >>
@@ -573,8 +549,6 @@ Factor
     <<
       func() (Attrib, error) {
         name := string($0.(*token.Token).Lit)
-        //fmt.Printf("→ DEBUG Factor: intentando usar variable '%s'\n", name)
-
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
@@ -583,7 +557,6 @@ Factor
         vs := raw.(semantics.VariableStructure)
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
-        // devolvemos el token para que la propia producción lo use en la AST
         return $0, nil
       }()
     >>

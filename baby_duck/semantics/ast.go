@@ -442,3 +442,64 @@ func HandleFEra(idToken interface{}) (interface{}, error) {
 
 	return fnTok, nil
 }
+
+func HandlePBody(gotoMainQuad interface{}) error {
+	// Registrar la función 'main' (si no está registrada)
+	if err := RegisterFunction("main"); err != nil {
+		return err
+	}
+
+	// Convertir el atributo (que es un int) a entero
+	quadIndex, ok := gotoMainQuad.(int)
+	if !ok {
+		return fmt.Errorf("error: se esperaba un índice de cuadruplo (int) para el GOTO a main")
+	}
+
+	// Obtener la entrada de la función main
+	raw, exists := FunctionDirectory.Get("main")
+	if !exists {
+		return fmt.Errorf("error: función 'main' no encontrada en el directorio de funciones")
+	}
+	fsMain := raw.(FunctionStructure)
+	startMain := fsMain.StartQuad
+
+	// Actualizar el cuadruplo GOTO con la dirección de inicio de main
+	if quadIndex < 0 || quadIndex >= len(Quads) {
+		return fmt.Errorf("error: índice de cuadruplo GOTO a main (%d) fuera de rango", quadIndex)
+	}
+	Quads[quadIndex].Result = startMain
+
+	return nil
+}
+
+func HandleCycleExpression() error {
+	// Extraer la condición de la pila de operandos
+	condAddr, err := PilaO.Pop()
+	if err != nil {
+		return fmt.Errorf("error al extraer condición de la pila: %v", err)
+	}
+
+	// Extraer el tipo de la condición
+	condTypeRaw, err := PTypes.Pop()
+	if err != nil {
+		return fmt.Errorf("error al extraer tipo de condición: %v", err)
+	}
+
+	condType, ok := condTypeRaw.(string)
+	if !ok {
+		return fmt.Errorf("tipo de condición no es string: %T", condTypeRaw)
+	}
+
+	// Verificar que la condición sea booleana
+	if condType != "bool" {
+		return fmt.Errorf("condición en while debe ser booleana, recibió: %v", condType)
+	}
+
+	// Generar cuadruplo GOTOF (salto si falso) con dirección pendiente
+	PushQuad("GOTOF", condAddr, "_", -1)
+
+	// Guardar la posición del cuadruplo para backpatching
+	PJumps.Push(len(Quads) - 1)
+
+	return nil
+}
