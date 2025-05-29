@@ -537,7 +537,6 @@ OperatorMul
     : multiply
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → *")
           semantics.DoMulDiv()
           semantics.PushOp("*")
           return nil, nil
@@ -546,7 +545,6 @@ OperatorMul
     | divide
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → /")
           semantics.DoMulDiv()
           semantics.PushOp("/")
           return nil, nil
@@ -598,7 +596,6 @@ FakeBottom
     <<
       func() (Attrib, error) {
         semantics.PushOp("⏊")
-        //fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
         return nil, nil
       }()
     >>
