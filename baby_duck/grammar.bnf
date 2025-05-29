@@ -289,28 +289,7 @@ Assign
   : id assign Expression semicolon
     << 
       func() (Attrib, error) {
-        name := string($0.(*token.Token).Lit)
-
-        // Verifica que la variable exista
-        if _, exists := semantics.Scopes.Current().Get(name); !exists {
-          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
-        }
-
-        // Obtener direccion
-        // vs := raw.(semantics.VariableStructure)
-        // targetAddr := vs.Address
-        
-        // Obtener el resultado final de la expresión (de la pila de operandos)
-        rightOp, _ := semantics.PilaO.Pop()
-
-        // Generar el cuadruplo de asignación
-        // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Scopes.Current().Get(name)
-        vs := raw.(semantics.VariableStructure)
-        semantics.PushQuad("=", rightOp, "_", vs.Address)
-
-        //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        //semantics.PrintQuads()
+        semantics.HandleAssign($0) 
         return nil, nil
       }()
     >>
@@ -321,26 +300,7 @@ Condition
   : if ConditionTail Body Else semicolon
   <<
     func() (Attrib, error) {
-      hasElse := $3.(bool)
-
-      if hasElse {
-        // 1. Pop del salto al final (GOTO)
-        endJumpRaw, _ := semantics.PJumps.Pop()
-        // 2. Pop del salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-
-        endJump := endJumpRaw.(int)
-        falseJump := falseJumpRaw.(int)
-
-        semantics.Quads[falseJump].Result = endJump + 1
-        semantics.Quads[endJump].Result = len(semantics.Quads)
-      } else {
-        // Solo el salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-        falseJump := falseJumpRaw.(int)
-        semantics.Quads[falseJump].Result = len(semantics.Quads)
-      }
-
+      semantics.HandleCondition($3.(bool))
       return nil, nil
     }()
   >>
@@ -348,24 +308,12 @@ Condition
 
 ConditionTail
   : l_round_par Expression r_round_par 
-      <<
-      func() (Attrib, error) {
-        condAddr, _ := semantics.PilaO.Pop()
-        condType, _ := semantics.PTypes.Pop()
-
-        if condType != "bool" {
-          return nil, fmt.Errorf("condición en if debe ser booleana, recibió: %v", condType)
-        }
-
-        // Cuádruplo GOTOF con dirección a rellenar luego
-        semantics.PushQuad("GOTOF", condAddr, "_", -1)
-
-        // Guardamos la posición del cuádruplo para backpatch
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
-
-        return nil, nil
-      }()
-    >>
+      << 
+        func() (Attrib, error) {
+          semantics.HandleConditionTail() 
+          return nil, nil
+        }()
+      >>
   ;
 
 Else
@@ -387,8 +335,7 @@ ElseTail
     : empty
     <<
       func() (Attrib, error) {
-        semantics.PushQuad("GOTO", "_", "_", -1)
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
+        semantics.HandleElseTail()
         return nil, nil
       }()
     >>
@@ -399,8 +346,7 @@ CycleHeader
   : while
   <<
     func() (Attrib, error) {
-      // Guardamos el índice actual como el inicio del ciclo
-      semantics.PJumps.Push(len(semantics.Quads))
+      semantics.HandleCycleHeader()
       return nil, nil
     }()
   >>
@@ -433,17 +379,7 @@ CycleTail
   : empty
   <<
     func() (Attrib, error) {
-      // Primero sacamos los dos índices
-      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
-      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
-
-      falseJump := falseJumpRaw.(int)
-      returnJump := returnJumpRaw.(int)
-
-      semantics.PushQuad("GOTO", "_", "_", returnJump)
-
-      semantics.Quads[falseJump].Result = len(semantics.Quads)
-
+      semantics.HandleCycleTail()
       return nil, nil
     }()
   >>
@@ -458,18 +394,14 @@ PrintList
   : Expression PrintListTail
     <<
       func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }()
     >>
   | cte_string PrintListTail
     <<
       func() (Attrib, error) {
-        tok := $0.(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString($0)
         return nil, nil
       }()
     >>
@@ -479,18 +411,14 @@ PrintListTail
   : comma Expression PrintListTail
     <<
       func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }()
     >>
   | comma cte_string PrintListTail
     <<
       func() (Attrib, error) {
-        tok := $1.(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString($1)
         return nil, nil
       }()
     >>
@@ -503,19 +431,16 @@ Expression
     : Exp Operator Exp
     <<
         func() (Attrib, error) {
-          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }()
       >>
     | Exp
     <<
       func() (Attrib, error) {
-        //fmt.Println("→ RULE: Expression → Exp")
         return $0, nil
       }()
     >>
@@ -525,7 +450,6 @@ Operator
     : less_than
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → >")
           semantics.PushOp(">")
           return nil, nil
         }()
@@ -533,7 +457,6 @@ Operator
     | more_than
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → <")
           semantics.PushOp("<")
           return nil, nil
         }()
@@ -541,7 +464,6 @@ Operator
     | not_equal
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → !=")
           semantics.PushOp("!=")
           return nil, nil
         }()
@@ -557,7 +479,6 @@ ExpList
     : OperatorAdd Term ExpList
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -565,7 +486,6 @@ ExpList
     | "empty"
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → ε")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -576,12 +496,7 @@ OperatorAdd
     : add
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → +")
-
-          // Antes de meter el nuevo operador,
-          // procesa si hay uno del mismo nivel (asociatividad izquierda)
           semantics.DoAddSub()
-
           semantics.PushOp("+")
           return nil, nil
         }()
@@ -589,7 +504,6 @@ OperatorAdd
     | rest
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → -")
           semantics.DoAddSub()
           semantics.PushOp("-")
           return nil, nil
@@ -606,7 +520,6 @@ TermList
     : OperatorMul Factor TermList
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()
@@ -614,7 +527,6 @@ TermList
     | "empty"
       <<
         func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → ε")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()

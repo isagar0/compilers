@@ -338,3 +338,85 @@ func HandleParam(idToken, typeToken interface{}) (VariableStructure, error) {
 
 	return VariableStructure{Name: name, Type: tipo, Address: dir}, nil
 }
+
+func HandleAssign(idToken interface{}) error {
+	name := string(idToken.(*token.Token).Lit)
+
+	if _, exists := Scopes.Current().Get(name); !exists {
+		return fmt.Errorf("error: variable '%s' no declarada", name)
+	}
+
+	rightOp, _ := PilaO.Pop()
+	raw, _ := Scopes.Current().Get(name)
+	vs := raw.(VariableStructure)
+
+	PushQuad("=", rightOp, "_", vs.Address)
+	return nil
+}
+
+func HandleConditionTail() error {
+	condAddr, _ := PilaO.Pop()
+	condType, _ := PTypes.Pop()
+
+	if condType != "bool" {
+		return fmt.Errorf("condición debe ser booleana, recibió: %v", condType)
+	}
+
+	PushQuad("GOTOF", condAddr, "_", -1)
+	PJumps.Push(len(Quads) - 1)
+	return nil
+}
+
+func HandleElseTail() error {
+	PushQuad("GOTO", "_", "_", -1)
+	PJumps.Push(len(Quads) - 1)
+	return nil
+}
+
+func HandleCycleHeader() error {
+	PJumps.Push(len(Quads))
+	return nil
+}
+
+func HandleCycleTail() error {
+	falseJumpRaw, _ := PJumps.Pop()
+	returnJumpRaw, _ := PJumps.Pop()
+
+	falseJump := falseJumpRaw.(int)
+	returnJump := returnJumpRaw.(int)
+
+	PushQuad("GOTO", "_", "_", returnJump)
+	Quads[falseJump].Result = len(Quads)
+	return nil
+}
+
+func HandlePrintExpression() error {
+	value, _ := PilaO.Pop()
+	PushQuad("PRINT", value, "_", "_")
+	return nil
+}
+
+func HandlePrintString(strToken interface{}) error {
+	tok := strToken.(*token.Token)
+	str := string(tok.Lit)
+	addr := GetConstAddress(str, "string")
+	PushQuad("PRINT", addr, "_", "_")
+	return nil
+}
+
+func HandleCondition(hasElse bool) error {
+	if hasElse {
+		endJumpRaw, _ := PJumps.Pop()
+		falseJumpRaw, _ := PJumps.Pop()
+		endJump := endJumpRaw.(int)
+		falseJump := falseJumpRaw.(int)
+
+		Quads[falseJump].Result = endJump + 1
+		Quads[endJump].Result = len(Quads)
+	} else {
+		falseJumpRaw, _ := PJumps.Pop()
+		falseJump := falseJumpRaw.(int)
+		Quads[falseJump].Result = len(Quads)
+	}
+	return nil
+}

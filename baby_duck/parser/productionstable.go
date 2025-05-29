@@ -520,28 +520,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Assign : id assign Expression semicolon	<< func() (Attrib, error) {
-        name := string(X[0].(*token.Token).Lit)
-
-        // Verifica que la variable exista
-        if _, exists := semantics.Scopes.Current().Get(name); !exists {
-          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
-        }
-
-        // Obtener direccion
-        // vs := raw.(semantics.VariableStructure)
-        // targetAddr := vs.Address
-        
-        // Obtener el resultado final de la expresión (de la pila de operandos)
-        rightOp, _ := semantics.PilaO.Pop()
-
-        // Generar el cuadruplo de asignación
-        // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Scopes.Current().Get(name)
-        vs := raw.(semantics.VariableStructure)
-        semantics.PushQuad("=", rightOp, "_", vs.Address)
-
-        //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        //semantics.PrintQuads()
+        semantics.HandleAssign(X[0]) 
         return nil, nil
       }() >>`,
 		Id:         "Assign",
@@ -550,54 +529,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        name := string(X[0].(*token.Token).Lit)
-
-        // Verifica que la variable exista
-        if _, exists := semantics.Scopes.Current().Get(name); !exists {
-          return nil, fmt.Errorf("error: variable '%s' no declarada", name)
-        }
-
-        // Obtener direccion
-        // vs := raw.(semantics.VariableStructure)
-        // targetAddr := vs.Address
-        
-        // Obtener el resultado final de la expresión (de la pila de operandos)
-        rightOp, _ := semantics.PilaO.Pop()
-
-        // Generar el cuadruplo de asignación
-        // semantics.PushQuad("=", rightOp, "_", name)
-        raw, _ := semantics.Scopes.Current().Get(name)
-        vs := raw.(semantics.VariableStructure)
-        semantics.PushQuad("=", rightOp, "_", vs.Address)
-
-        //fmt.Printf("→ GENERATE QUAD: = %v -> %v\n", rightOp, name)
-        //semantics.PrintQuads()
+        semantics.HandleAssign(X[0]) 
         return nil, nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `Condition : if ConditionTail Body Else semicolon	<< func() (Attrib, error) {
-      hasElse := X[3].(bool)
-
-      if hasElse {
-        // 1. Pop del salto al final (GOTO)
-        endJumpRaw, _ := semantics.PJumps.Pop()
-        // 2. Pop del salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-
-        endJump := endJumpRaw.(int)
-        falseJump := falseJumpRaw.(int)
-
-        semantics.Quads[falseJump].Result = endJump + 1
-        semantics.Quads[endJump].Result = len(semantics.Quads)
-      } else {
-        // Solo el salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-        falseJump := falseJumpRaw.(int)
-        semantics.Quads[falseJump].Result = len(semantics.Quads)
-      }
-
+      semantics.HandleCondition(X[3].(bool))
       return nil, nil
     }() >>`,
 		Id:         "Condition",
@@ -606,68 +545,25 @@ var productionsTable = ProdTab{
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-      hasElse := X[3].(bool)
-
-      if hasElse {
-        // 1. Pop del salto al final (GOTO)
-        endJumpRaw, _ := semantics.PJumps.Pop()
-        // 2. Pop del salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-
-        endJump := endJumpRaw.(int)
-        falseJump := falseJumpRaw.(int)
-
-        semantics.Quads[falseJump].Result = endJump + 1
-        semantics.Quads[endJump].Result = len(semantics.Quads)
-      } else {
-        // Solo el salto falso (GOTOF)
-        falseJumpRaw, _ := semantics.PJumps.Pop()
-        falseJump := falseJumpRaw.(int)
-        semantics.Quads[falseJump].Result = len(semantics.Quads)
-      }
-
+      semantics.HandleCondition(X[3].(bool))
       return nil, nil
     }()
 		},
 	},
 	ProdTabEntry{
 		String: `ConditionTail : l_round_par Expression r_round_par	<< func() (Attrib, error) {
-        condAddr, _ := semantics.PilaO.Pop()
-        condType, _ := semantics.PTypes.Pop()
-
-        if condType != "bool" {
-          return nil, fmt.Errorf("condición en if debe ser booleana, recibió: %v", condType)
-        }
-
-        // Cuádruplo GOTOF con dirección a rellenar luego
-        semantics.PushQuad("GOTOF", condAddr, "_", -1)
-
-        // Guardamos la posición del cuádruplo para backpatch
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
-
-        return nil, nil
-      }() >>`,
+          semantics.HandleConditionTail() 
+          return nil, nil
+        }() >>`,
 		Id:         "ConditionTail",
 		NTType:     22,
 		Index:      33,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        condAddr, _ := semantics.PilaO.Pop()
-        condType, _ := semantics.PTypes.Pop()
-
-        if condType != "bool" {
-          return nil, fmt.Errorf("condición en if debe ser booleana, recibió: %v", condType)
-        }
-
-        // Cuádruplo GOTOF con dirección a rellenar luego
-        semantics.PushQuad("GOTOF", condAddr, "_", -1)
-
-        // Guardamos la posición del cuádruplo para backpatch
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
-
-        return nil, nil
-      }()
+          semantics.HandleConditionTail() 
+          return nil, nil
+        }()
 		},
 	},
 	ProdTabEntry{
@@ -700,8 +596,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ElseTail : empty	<< func() (Attrib, error) {
-        semantics.PushQuad("GOTO", "_", "_", -1)
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
+        semantics.HandleElseTail()
         return nil, nil
       }() >>`,
 		Id:         "ElseTail",
@@ -710,16 +605,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        semantics.PushQuad("GOTO", "_", "_", -1)
-        semantics.PJumps.Push(len(semantics.Quads) - 1)
+        semantics.HandleElseTail()
         return nil, nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `CycleHeader : while	<< func() (Attrib, error) {
-      // Guardamos el índice actual como el inicio del ciclo
-      semantics.PJumps.Push(len(semantics.Quads))
+      semantics.HandleCycleHeader()
       return nil, nil
     }() >>`,
 		Id:         "CycleHeader",
@@ -728,8 +621,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-      // Guardamos el índice actual como el inicio del ciclo
-      semantics.PJumps.Push(len(semantics.Quads))
+      semantics.HandleCycleHeader()
       return nil, nil
     }()
 		},
@@ -780,17 +672,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `CycleTail : empty	<< func() (Attrib, error) {
-      // Primero sacamos los dos índices
-      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
-      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
-
-      falseJump := falseJumpRaw.(int)
-      returnJump := returnJumpRaw.(int)
-
-      semantics.PushQuad("GOTO", "_", "_", returnJump)
-
-      semantics.Quads[falseJump].Result = len(semantics.Quads)
-
+      semantics.HandleCycleTail()
       return nil, nil
     }() >>`,
 		Id:         "CycleTail",
@@ -799,17 +681,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-      // Primero sacamos los dos índices
-      falseJumpRaw, _ := semantics.PJumps.Pop()  // GOTOF
-      returnJumpRaw, _ := semantics.PJumps.Pop() // Inicio del ciclo
-
-      falseJump := falseJumpRaw.(int)
-      returnJump := returnJumpRaw.(int)
-
-      semantics.PushQuad("GOTO", "_", "_", returnJump)
-
-      semantics.Quads[falseJump].Result = len(semantics.Quads)
-
+      semantics.HandleCycleTail()
       return nil, nil
     }()
 		},
@@ -826,8 +698,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `PrintList : Expression PrintListTail	<< func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }() >>`,
 		Id:         "PrintList",
@@ -836,18 +707,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `PrintList : cte_string PrintListTail	<< func() (Attrib, error) {
-        tok := X[0].(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString(X[0])
         return nil, nil
       }() >>`,
 		Id:         "PrintList",
@@ -856,18 +723,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        tok := X[0].(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString(X[0])
         return nil, nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `PrintListTail : comma Expression PrintListTail	<< func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }() >>`,
 		Id:         "PrintListTail",
@@ -876,18 +739,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        value, _ := semantics.PilaO.Pop()
-        semantics.PushQuad("PRINT", value, "_", "_")
+        semantics.HandlePrintExpression()
         return nil, nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `PrintListTail : comma cte_string PrintListTail	<< func() (Attrib, error) {
-        tok := X[1].(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString(X[1])
         return nil, nil
       }() >>`,
 		Id:         "PrintListTail",
@@ -896,10 +755,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        tok := X[1].(*token.Token)
-        str := string(tok.Lit)
-        addr := semantics.GetConstAddress(str, "string")
-        semantics.PushQuad("PRINT", addr, "_", "_")
+        semantics.HandlePrintString(X[1])
         return nil, nil
       }()
 		},
@@ -916,12 +772,10 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Expression : Exp Operator Exp	<< func() (Attrib, error) {
-          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }() >>`,
 		Id:         "Expression",
@@ -930,19 +784,16 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          // fmt.Println("→ DEBUG: Doing relational operation")
           err := semantics.DoRelational()
           if err != nil {
             return nil, err
           }
-          // fmt.Printf("DEBUG: After relational, quads: %v\n", semantics.Quads)
           return nil, nil
         }()
 		},
 	},
 	ProdTabEntry{
 		String: `Expression : Exp	<< func() (Attrib, error) {
-        //fmt.Println("→ RULE: Expression → Exp")
         return X[0], nil
       }() >>`,
 		Id:         "Expression",
@@ -951,14 +802,12 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        //fmt.Println("→ RULE: Expression → Exp")
         return X[0], nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `Operator : less_than	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → >")
           semantics.PushOp(">")
           return nil, nil
         }() >>`,
@@ -968,7 +817,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → >")
           semantics.PushOp(">")
           return nil, nil
         }()
@@ -976,7 +824,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Operator : more_than	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → <")
           semantics.PushOp("<")
           return nil, nil
         }() >>`,
@@ -986,7 +833,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → <")
           semantics.PushOp("<")
           return nil, nil
         }()
@@ -994,7 +840,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Operator : not_equal	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → !=")
           semantics.PushOp("!=")
           return nil, nil
         }() >>`,
@@ -1004,7 +849,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: Operator → !=")
           semantics.PushOp("!=")
           return nil, nil
         }()
@@ -1022,7 +866,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ExpList : OperatorAdd Term ExpList	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
           _ = semantics.DoAddSub()
           return nil, nil
         }() >>`,
@@ -1032,7 +875,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → OperatorAdd Term ExpList")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -1040,7 +882,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ExpList : "empty"	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → ε")
           _ = semantics.DoAddSub()
           return nil, nil
         }() >>`,
@@ -1050,7 +891,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: ExpList → ε")
           _ = semantics.DoAddSub()
           return nil, nil
         }()
@@ -1058,12 +898,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorAdd : add	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → +")
-
-          // Antes de meter el nuevo operador,
-          // procesa si hay uno del mismo nivel (asociatividad izquierda)
           semantics.DoAddSub()
-
           semantics.PushOp("+")
           return nil, nil
         }() >>`,
@@ -1073,12 +908,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → +")
-
-          // Antes de meter el nuevo operador,
-          // procesa si hay uno del mismo nivel (asociatividad izquierda)
           semantics.DoAddSub()
-
           semantics.PushOp("+")
           return nil, nil
         }()
@@ -1086,7 +916,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorAdd : rest	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → -")
           semantics.DoAddSub()
           semantics.PushOp("-")
           return nil, nil
@@ -1097,7 +926,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorAdd → -")
           semantics.DoAddSub()
           semantics.PushOp("-")
           return nil, nil
@@ -1116,7 +944,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `TermList : OperatorMul Factor TermList	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
           _ = semantics.DoMulDiv()
           return nil, nil
         }() >>`,
@@ -1126,7 +953,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → OperatorMul Factor TermList")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()
@@ -1134,7 +960,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `TermList : "empty"	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → ε")
           _ = semantics.DoMulDiv()
           return nil, nil
         }() >>`,
@@ -1144,7 +969,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 0,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: TermList → ε")
           _ = semantics.DoMulDiv()
           return nil, nil
         }()
