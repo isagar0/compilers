@@ -15,21 +15,28 @@ type TI4 struct {
 var testDataAccept4 = []*TI4{
 	{
 		`program Recursion;
+		 var n, result: int;
 
 		 void factorial(x: int) [
+			var temp: int;
 			{
 				if (x < 1) {
-					print("En el if");
+					if (x > -1) {
+						result = 1;
+					};
 				} else {
-					x = x - 1;
-					print("x + 1 = ", x);
-					factorial(x);
+					n = x - 1;
+					factorial(n);
+					result = result * x;
 				};
 			}
 		 ];
 
 		 main {
-			factorial(4);
+			n = 5;
+			result = 1;
+			factorial(n);
+			print("El factorial es:", result);
 		 }
 
 		 end`,

@@ -30,8 +30,15 @@ func (d *Dictionary) Get(key string) (interface{}, bool) {
 	if val, ok := d.Items[key]; ok {
 		return val, true
 	}
+	// Buscar en scopes padres recursivamente
 	if d.parent != nil {
 		return d.parent.Get(key)
+	}
+	// Si no está en el scope local, buscar en el global
+	if Scopes.global != d { // Evitar bucle infinito
+		if val, ok := Scopes.global.Get(key); ok {
+			return val, true
+		}
 	}
 	return nil, false
 }

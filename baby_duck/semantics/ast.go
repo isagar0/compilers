@@ -19,9 +19,10 @@ func ResetSemanticState() {
 // -------------------------------------------- VARS --------------------------------------------
 // Reset: Crea una nuvea tabla global y sus scopes vacios
 func ResetVars() {
+	global := NewDictionary()
 	Scopes = &ScopeManager{
-		global:  NewDictionary(), // Scope global
-		current: nil,             // Pila soces locales vacio
+		global:  global,
+		current: global, // Ahora current apunta a global inicialmente
 	}
 }
 
@@ -154,10 +155,12 @@ func ValidateParams(params []VariableStructure) error {
 
 	// Recorre cada parametro recibido
 	for _, param := range params {
-		// Verifica si el parametro ya fue declarada, marca error
-		if _, exists := paramSet.Get(param.Name); exists {
-			return fmt.Errorf("error: parámetro '%s' duplicado en la función", param.Name)
-		}
+		/*
+			// Verifica si el parametro ya fue declarada, marca error
+			if _, exists := paramSet.Get(param.Name); exists {
+				return fmt.Errorf("error: parámetro '%s' duplicado en la función", param.Name)
+			}
+		*/
 
 		// Si no existe, se agrega para futuras comparaciones
 		paramSet.Put(param.Name, param)
@@ -191,7 +194,7 @@ func FuncDeclaration(name string, params []VariableStructure, localVarCount, sta
 			// Registrar con nombre especial para depuración			/
 			// return fmt.Errorf("parameter %s already exists", param.Name)
 			AddressToName[vs.Address] = fmt.Sprintf("%s_param_%d", name, i+1)
-			fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
+			// fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
 		}
 	}
 

@@ -138,7 +138,7 @@ var testDataFail2 = []*TI2{
 				 x = 5;
 			 }
 			 end`,
-	}, // Fail 1: Duplicación de variable global 'x'
+	}, // Fail 1: Duplicación de variable global 'x' -> DID NOT PRODUCE EXPECTED ERROR
 	{
 		`program dupVarLocal;
 			 void algo()[
@@ -152,7 +152,7 @@ var testDataFail2 = []*TI2{
 				 algo();
 			 }
 			 end`,
-	}, // Fail 2: Duplicación de variable local 'y' dentro de una función
+	}, // Fail 2: Duplicación de variable local 'y' dentro de una función -> DID NOT PRODUCE EXPECTED ERROR
 	{
 		`program dupFunc;
 			 void foo()[
@@ -173,7 +173,7 @@ var testDataFail2 = []*TI2{
 			 main {
 			 }
 			 end`,
-	}, // Fail 4: Duplicación de parámetro 'a' en la misma función
+	}, // Fail 4: Duplicación de parámetro 'a' en la misma función -> DID NOT PRODUCE EXPECTED ERROR
 	{
 		`program funcionesLocales;
 		 var x : int;
@@ -196,7 +196,7 @@ var testDataFail2 = []*TI2{
 			print(x);
 		 }
 		 end`,
-	}, // Fail 5: Misma variable dentro de funcion
+	}, // Fail 5: Misma variable dentro de funcion -> DID NOT PRODUCE EXPECTED ERROR
 	{
 		`program useUndecl;
 			main {
