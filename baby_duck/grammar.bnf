@@ -623,25 +623,7 @@ FEra
   : id
   <<
       func() (Attrib, error) {
-        // 1) Extraer nombre de la función
-        fnTok, ok := $0.(*token.Token)
-        if !ok {
-          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", $0)
-        }
-        name := string(fnTok.Lit)
-
-        // 3) Comprobar que la función exista
-        _, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-
-        // Tamaño = variables locales + temporales + parámetros
-        raw, _ := semantics.FunctionDirectory.Get(name)
-        fs := raw.(semantics.FunctionStructure)
-        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
-        semantics.PushQuad("ERA", "_", "_", size)
-
+        semantics.HandleFEra($0)
         return $0, nil
       }()
     >>

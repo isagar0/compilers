@@ -976,7 +976,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorMul : multiply	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → *")
           semantics.DoMulDiv()
           semantics.PushOp("*")
           return nil, nil
@@ -987,7 +986,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → *")
           semantics.DoMulDiv()
           semantics.PushOp("*")
           return nil, nil
@@ -996,7 +994,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `OperatorMul : divide	<< func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → /")
           semantics.DoMulDiv()
           semantics.PushOp("/")
           return nil, nil
@@ -1007,7 +1004,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Println("→ RULE: OperatorMul → /")
           semantics.DoMulDiv()
           semantics.PushOp("/")
           return nil, nil
@@ -1115,7 +1111,6 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `FakeBottom : l_round_par	<< func() (Attrib, error) {
         semantics.PushOp("⏊")
-        //fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
         return nil, nil
       }() >>`,
 		Id:         "FakeBottom",
@@ -1125,7 +1120,6 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
         semantics.PushOp("⏊")
-        //fmt.Println("→ PUSH OPERADOR: ⏊ (fondo falso)")
         return nil, nil
       }()
 		},
@@ -1168,25 +1162,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FEra : id	<< func() (Attrib, error) {
-        // 1) Extraer nombre de la función
-        fnTok, ok := X[0].(*token.Token)
-        if !ok {
-          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
-        }
-        name := string(fnTok.Lit)
-
-        // 3) Comprobar que la función exista
-        _, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-
-        // Tamaño = variables locales + temporales + parámetros
-        raw, _ := semantics.FunctionDirectory.Get(name)
-        fs := raw.(semantics.FunctionStructure)
-        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
-        semantics.PushQuad("ERA", "_", "_", size)
-
+        semantics.HandleFEra(X[0])
         return X[0], nil
       }() >>`,
 		Id:         "FEra",
@@ -1195,25 +1171,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // 1) Extraer nombre de la función
-        fnTok, ok := X[0].(*token.Token)
-        if !ok {
-          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", X[0])
-        }
-        name := string(fnTok.Lit)
-
-        // 3) Comprobar que la función exista
-        _, exists := semantics.FunctionDirectory.Get(name)
-        if !exists {
-          return nil, fmt.Errorf("error: función '%s' no declarada", name)
-        }
-
-        // Tamaño = variables locales + temporales + parámetros
-        raw, _ := semantics.FunctionDirectory.Get(name)
-        fs := raw.(semantics.FunctionStructure)
-        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
-        semantics.PushQuad("ERA", "_", "_", size)
-
+        semantics.HandleFEra(X[0])
         return X[0], nil
       }()
 		},

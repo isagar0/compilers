@@ -420,3 +420,25 @@ func HandleCondition(hasElse bool) error {
 	}
 	return nil
 }
+
+func HandleFEra(idToken interface{}) (interface{}, error) {
+	// 1) Extraer nombre de la función
+	fnTok, ok := idToken.(*token.Token)
+	if !ok {
+		return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", idToken)
+	}
+	name := string(fnTok.Lit)
+
+	// 2) Comprobar que la función exista
+	raw, exists := FunctionDirectory.Get(name)
+	if !exists {
+		return nil, fmt.Errorf("error: función '%s' no declarada", name)
+	}
+
+	// 3) Calcular tamaño y generar ERA
+	fs := raw.(FunctionStructure)
+	size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+	PushQuad("ERA", "_", "_", size)
+
+	return fnTok, nil
+}
