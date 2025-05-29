@@ -258,29 +258,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Function : FunctionHeaderTwo Body r_square_par semicolon	<< func() (Attrib, error) {
-        info := X[0].(semantics.FuncInfo) // Obtener la información de la función
-        // Obtener el conteo real de temporales usados
-        tempCount := semantics.TempVar
-
-        // Actualizar la entrada de la función con el TempCount correcto
-        raw, exists := semantics.FunctionDirectory.Get(info.Name)
-        if !exists {
-            return nil, fmt.Errorf("función '%s' no encontrada", info.Name)
-        }
-        fs := raw.(semantics.FunctionStructure)
-        fs.TempCount = tempCount
-        semantics.FunctionDirectory.Put(info.Name, fs)
-
-        // fmt.Println("  - TempCount", info.Name, "a", tempCount)
-
-        semantics.TempVar = 0
-
-        // Generar ENDFUNC aquí (dentro de cada función)
-        semantics.PushQuad("ENDFUNC", "_", "_", "_")
-
-        // 2) cierro el scope local
-        semantics.Scopes.ExitScope()
-
+        semantics.HandleFunction(X[0])
         return nil, nil
       }() >>`,
 		Id:         "Function",
@@ -289,29 +267,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        info := X[0].(semantics.FuncInfo) // Obtener la información de la función
-        // Obtener el conteo real de temporales usados
-        tempCount := semantics.TempVar
-
-        // Actualizar la entrada de la función con el TempCount correcto
-        raw, exists := semantics.FunctionDirectory.Get(info.Name)
-        if !exists {
-            return nil, fmt.Errorf("función '%s' no encontrada", info.Name)
-        }
-        fs := raw.(semantics.FunctionStructure)
-        fs.TempCount = tempCount
-        semantics.FunctionDirectory.Put(info.Name, fs)
-
-        // fmt.Println("  - TempCount", info.Name, "a", tempCount)
-
-        semantics.TempVar = 0
-
-        // Generar ENDFUNC aquí (dentro de cada función)
-        semantics.PushQuad("ENDFUNC", "_", "_", "_")
-
-        // 2) cierro el scope local
-        semantics.Scopes.ExitScope()
-
+        semantics.HandleFunction(X[0])
         return nil, nil
       }()
 		},
@@ -1108,6 +1064,18 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FEra : id	<< func() (Attrib, error) {
+        token, ok := X[0].(*token.Token)
+        if !ok {
+            return nil, fmt.Errorf("internal error: expected token for function name")
+        }
+        name := string(token.Lit)
+        raw, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+            return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+        if _, ok := raw.(semantics.FunctionStructure); !ok {
+            return nil, fmt.Errorf("internal error: entry for function '%s' is not a FunctionStructure", name)
+        }
         semantics.HandleFEra(X[0])
         return X[0], nil
       }() >>`,
@@ -1117,6 +1085,18 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
+        token, ok := X[0].(*token.Token)
+        if !ok {
+            return nil, fmt.Errorf("internal error: expected token for function name")
+        }
+        name := string(token.Lit)
+        raw, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+            return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+        if _, ok := raw.(semantics.FunctionStructure); !ok {
+            return nil, fmt.Errorf("internal error: entry for function '%s' is not a FunctionStructure", name)
+        }
         semantics.HandleFEra(X[0])
         return X[0], nil
       }()

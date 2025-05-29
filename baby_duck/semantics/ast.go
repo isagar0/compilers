@@ -503,3 +503,40 @@ func HandleCycleExpression() error {
 
 	return nil
 }
+
+func HandleFunction(funcInfo interface{}) error {
+	info, ok := funcInfo.(FuncInfo)
+	if !ok {
+		return fmt.Errorf("error interno: información de función inválida")
+	}
+
+	// Obtener el conteo actual de temporales
+	tempCount := TempVar
+
+	// Obtener la entrada de la función
+	raw, exists := FunctionDirectory.Get(info.Name)
+	if !exists {
+		return fmt.Errorf("error: función '%s' no encontrada en el directorio", info.Name)
+	}
+
+	// Verificar y convertir el tipo
+	fs, ok := raw.(FunctionStructure)
+	if !ok {
+		return fmt.Errorf("error interno: entrada para '%s' no es FunctionStructure", info.Name)
+	}
+
+	// Actualizar el conteo de temporales
+	fs.TempCount = tempCount
+	FunctionDirectory.Put(info.Name, fs)
+
+	// Reiniciar contador para la siguiente función
+	TempVar = 0
+
+	// Generar ENDFUNC
+	PushQuad("ENDFUNC", "_", "_", "_")
+
+	// Salir del scope local
+	Scopes.ExitScope()
+
+	return nil
+}

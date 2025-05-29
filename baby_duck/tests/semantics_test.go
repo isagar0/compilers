@@ -203,7 +203,7 @@ var testDataFail2 = []*TI2{
 				x = 5;
 			}
 			end`,
-	}, // Fail 6: Asignación a 'x' no declarada
+	}, // Fail 6: Asignación a 'x' no declarada -> DID NOT PRODUCE EXPECTED ERROR
 	{
 		`program useUndeclExpr;
 			var x: int;
@@ -242,10 +242,10 @@ var testDataFail2 = []*TI2{
 	}, // Fail 9: Nombre de funcion repetida
 	{
 		`program undeclaredCall;
-			main {
-				bar();
-			}
-			end`,
+				main {
+					bar();
+				}
+				end`,
 	}, // Fail 10: Llamada a función 'bar' no declarada
 	{
 		`program tooFewArgs;
