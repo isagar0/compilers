@@ -61,12 +61,6 @@ r_square_par : ']' ;
     "baby_duck/semantics"
     "baby_duck/token"
   )
-  
-  // Helper para pasar nombre+params
-  type FuncInfo struct {
-    Name   string
-    Params []semantics.VariableStructure
-  }
 >>
 
 /* PROGRAM */
@@ -101,21 +95,7 @@ PBody
 
 PHeader
   : program id semicolon
-  <<
-    func() (Attrib, error) {
-      token := $1.(*token.Token)
-      name := string(token.Lit)
-      if err := semantics.RegisterMainProgram(name); err != nil {
-        return nil, err
-      }
-
-      // 1. Generar GOTO main (target temporal -1)
-        semantics.PushQuad("GOTO", "MAIN", "_", -1)
-        gotoMainQuad := len(semantics.Quads) - 1
-
-      return gotoMainQuad, nil
-      }()
-  >>
+  << semantics.HandlePHeader($1) >>
   ;
 
 PTail
@@ -143,27 +123,11 @@ Vars
 
 VarDecl
     : var IdList colon Type semicolon
-    <<
-        func() (Attrib, error) {
-            // Obtener los identificadores de IdList (debe ser []string)
-            if ids, ok := $1.([]string); ok {
-                // Obtener el tipo de las variables
-                if tipoToken, ok := $3.(*token.Token); ok {
-                    tipo := string(tipoToken.Lit)
-
-                    // Declarar las variables en la tabla global
-                    if err := semantics.VarDeclaration(ids, tipo); err != nil {
-                        return nil, err
-                    }
-
-                    return nil, nil // Si todo está bien, se devuelve nil
-                } else {
-                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", $3)
-                }
-            } else {
-                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", $1)
-            }
-        }()
+    << 
+      func() (Attrib, error) {
+        semantics.HandleVarDecl($1, $3) 
+        return nil, nil
+      }()
     >>
     ;
 
@@ -212,66 +176,21 @@ Type
     ;
 
 /* FUNCS */
-/* CABECERA de función: registra el nombre, abre el scope, declara parámetros */
 FunctionHeader
   : void id l_round_par Params r_round_par l_square_par
-    <<
-      func() (Attrib, error) {
-        // X[1] = id, X[3] = Params
-        name   := string(X[1].(*token.Token).Lit)
-        params := $3.([]semantics.VariableStructure)
-
-        // 1) registro preliminar (void, sin vars aún)
-        if err := semantics.RegisterFunction(name); err != nil {
-          return nil, err
-        }
-        // 2) abro el scope local
-        semantics.Scopes.EnterScope()
-        // 3) declaro los parámetros en ese scope
-        for _, p := range params {
-          if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.Scopes.ExitScope()
-            return nil, err
-          }
-        }
-        // devolvemos la info para la segunda parte
-        return FuncInfo{Name: name, Params: params}, nil
-      }()
-    >>
+    << semantics.HandleFunctionHeader($1, $3) >>
   ;
 
-/* CUERPO de función: consume vars locales, cierra el scope y completa el registro */
 FunctionHeaderTwo
   : FunctionHeader Vars
-  <<
-      func() (Attrib, error) {
-        // recupero lo que devolvió FunctionHeader
-        info := X[0].(FuncInfo)
-        localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
-        startQuad := semantics.GetCurrentQuad()+1
-        /*
-        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
-        fmt.Println("  - Parámetros declarados:", len(info.Params))
-        fmt.Println("  - Variables locales contadas:", localVarCount)
-        fmt.Println("  - Cuadruplo inicial:", startQuad)
-        */
-
-        // 1) actualizo la entrada con params y VarTable local
-        if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
-          semantics.Scopes.ExitScope()
-          return nil, err
-        }  
-
-        return info, nil
-      }()
-    >>
+  << semantics.HandleFunctionHeaderTwo($0) >>
   ;
 
 Function
   : FunctionHeaderTwo Body r_square_par semicolon
     <<
       func() (Attrib, error) {
-        info := X[0].(FuncInfo) // Obtener la información de la función
+        info := X[0].(semantics.FuncInfo) // Obtener la información de la función
         // Obtener el conteo real de temporales usados
         tempCount := semantics.TempVar
 
@@ -284,7 +203,7 @@ Function
         fs.TempCount = tempCount
         semantics.FunctionDirectory.Put(info.Name, fs)
 
-        fmt.Println("  - TempCount", info.Name, "a", tempCount)
+        // fmt.Println("  - TempCount", info.Name, "a", tempCount)
 
         semantics.TempVar = 0
 
@@ -320,31 +239,12 @@ ParamList
   : id colon Type ParamListTail
     <<
       func() (Attrib, error) {
-        // X[0]=id, X[2]=Type, X[3]=la cola
-        nameTok := X[0].(*token.Token)
-        tipoTok := X[2].(*token.Token)
-        name := string(nameTok.Lit)
-        tipo := string(tipoTok.Lit)
-
-        // Asignar dirección en segmento local
-        dir, err := semantics.AssignAddressToParam(tipo)
+        param, err := semantics.HandleParam($0, $2)
         if err != nil {
             return nil, err
         }
-
-        // Declarar en scope actual
-        err = semantics.DeclareInCurrentScope(name, tipo, dir)
-        if err != nil {
-            return nil, err
-        }
-
-        list := []semantics.VariableStructure{
-          {Name: name, Type: tipo, Address: dir},
-        }
-        if tail, ok := X[3].([]semantics.VariableStructure); ok {
-          list = append(list, tail...)
-        }
-        return list, nil
+        tail, _ := $3.([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }()
     >>
   ;
@@ -353,16 +253,12 @@ ParamListTail
   : comma id colon Type ParamListTail
     <<
       func() (Attrib, error) {
-        // X[1]=id, X[3]=Type, X[4]=ParamListTail
-        nameTok := X[1].(*token.Token)
-        tipoTok := X[3].(*token.Token)
-        list := []semantics.VariableStructure{
-          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        param, err := semantics.HandleParam($1, $3)
+        if err != nil {
+            return nil, err
         }
-        if more, ok := X[4].([]semantics.VariableStructure); ok {
-          list = append(list, more...)
-        }
-        return list, nil
+        tail, _ := $4.([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }()
     >>
   | "empty"

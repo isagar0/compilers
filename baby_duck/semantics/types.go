@@ -74,3 +74,9 @@ type MemoryManager struct {
 	Temp     SegmentGroup
 	Constant SegmentGroup
 }
+
+// Helper para pasar nombre+params
+type FuncInfo struct {
+	Name   string
+	Params []VariableStructure
+}

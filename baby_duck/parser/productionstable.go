@@ -8,12 +8,6 @@ import (
     "baby_duck/semantics"
     "baby_duck/token"
   )
-  
-  // Helper para pasar nombre+params
-  type FuncInfo struct {
-    Name   string
-    Params []semantics.VariableStructure
-  }
 
 type (
 	ProdTab      [numProductions]ProdTabEntry
@@ -97,37 +91,13 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `PHeader : program id semicolon	<< func() (Attrib, error) {
-      token := X[1].(*token.Token)
-      name := string(token.Lit)
-      if err := semantics.RegisterMainProgram(name); err != nil {
-        return nil, err
-      }
-
-      // 1. Generar GOTO main (target temporal -1)
-        semantics.PushQuad("GOTO", "MAIN", "_", -1)
-        gotoMainQuad := len(semantics.Quads) - 1
-
-      return gotoMainQuad, nil
-      }() >>`,
+		String: `PHeader : program id semicolon	<< semantics.HandlePHeader(X[1]) >>`,
 		Id:         "PHeader",
 		NTType:     3,
 		Index:      3,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return func() (Attrib, error) {
-      token := X[1].(*token.Token)
-      name := string(token.Lit)
-      if err := semantics.RegisterMainProgram(name); err != nil {
-        return nil, err
-      }
-
-      // 1. Generar GOTO main (target temporal -1)
-        semantics.PushQuad("GOTO", "MAIN", "_", -1)
-        gotoMainQuad := len(semantics.Quads) - 1
-
-      return gotoMainQuad, nil
-      }()
+			return semantics.HandlePHeader(X[1])
 		},
 	},
 	ProdTabEntry{
@@ -192,50 +162,18 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `VarDecl : var IdList colon Type semicolon	<< func() (Attrib, error) {
-            // Obtener los identificadores de IdList (debe ser []string)
-            if ids, ok := X[1].([]string); ok {
-                // Obtener el tipo de las variables
-                if tipoToken, ok := X[3].(*token.Token); ok {
-                    tipo := string(tipoToken.Lit)
-
-                    // Declarar las variables en la tabla global
-                    if err := semantics.VarDeclaration(ids, tipo); err != nil {
-                        return nil, err
-                    }
-
-                    return nil, nil // Si todo está bien, se devuelve nil
-                } else {
-                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", X[3])
-                }
-            } else {
-                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", X[1])
-            }
-        }() >>`,
+        semantics.HandleVarDecl(X[1], X[3]) 
+        return nil, nil
+      }() >>`,
 		Id:         "VarDecl",
 		NTType:     7,
 		Index:      9,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-            // Obtener los identificadores de IdList (debe ser []string)
-            if ids, ok := X[1].([]string); ok {
-                // Obtener el tipo de las variables
-                if tipoToken, ok := X[3].(*token.Token); ok {
-                    tipo := string(tipoToken.Lit)
-
-                    // Declarar las variables en la tabla global
-                    if err := semantics.VarDeclaration(ids, tipo); err != nil {
-                        return nil, err
-                    }
-
-                    return nil, nil // Si todo está bien, se devuelve nil
-                } else {
-                    return nil, fmt.Errorf("se esperaba un token para el tipo, pero se encontró: %T", X[3])
-                }
-            } else {
-                return nil, fmt.Errorf("se esperaba un []string para los identificadores, pero se encontró: %T", X[1])
-            }
-        }()
+        semantics.HandleVarDecl(X[1], X[3]) 
+        return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
@@ -329,106 +267,28 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `FunctionHeader : void id l_round_par Params r_round_par l_square_par	<< func() (Attrib, error) {
-        // X[1] = id, X[3] = Params
-        name   := string(X[1].(*token.Token).Lit)
-        params := X[3].([]semantics.VariableStructure)
-
-        // 1) registro preliminar (void, sin vars aún)
-        if err := semantics.RegisterFunction(name); err != nil {
-          return nil, err
-        }
-        // 2) abro el scope local
-        semantics.Scopes.EnterScope()
-        // 3) declaro los parámetros en ese scope
-        for _, p := range params {
-          if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.Scopes.ExitScope()
-            return nil, err
-          }
-        }
-        // devolvemos la info para la segunda parte
-        return FuncInfo{Name: name, Params: params}, nil
-      }() >>`,
+		String: `FunctionHeader : void id l_round_par Params r_round_par l_square_par	<< semantics.HandleFunctionHeader(X[1], X[3]) >>`,
 		Id:         "FunctionHeader",
 		NTType:     11,
 		Index:      15,
 		NumSymbols: 6,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return func() (Attrib, error) {
-        // X[1] = id, X[3] = Params
-        name   := string(X[1].(*token.Token).Lit)
-        params := X[3].([]semantics.VariableStructure)
-
-        // 1) registro preliminar (void, sin vars aún)
-        if err := semantics.RegisterFunction(name); err != nil {
-          return nil, err
-        }
-        // 2) abro el scope local
-        semantics.Scopes.EnterScope()
-        // 3) declaro los parámetros en ese scope
-        for _, p := range params {
-          if err := semantics.VarDeclaration([]string{p.Name}, p.Type); err != nil {
-            semantics.Scopes.ExitScope()
-            return nil, err
-          }
-        }
-        // devolvemos la info para la segunda parte
-        return FuncInfo{Name: name, Params: params}, nil
-      }()
+			return semantics.HandleFunctionHeader(X[1], X[3])
 		},
 	},
 	ProdTabEntry{
-		String: `FunctionHeaderTwo : FunctionHeader Vars	<< func() (Attrib, error) {
-        // recupero lo que devolvió FunctionHeader
-        info := X[0].(FuncInfo)
-        localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
-        startQuad := semantics.GetCurrentQuad()+1
-        /*
-        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
-        fmt.Println("  - Parámetros declarados:", len(info.Params))
-        fmt.Println("  - Variables locales contadas:", localVarCount)
-        fmt.Println("  - Cuadruplo inicial:", startQuad)
-        */
-
-        // 1) actualizo la entrada con params y VarTable local
-        if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
-          semantics.Scopes.ExitScope()
-          return nil, err
-        }  
-
-        return info, nil
-      }() >>`,
+		String: `FunctionHeaderTwo : FunctionHeader Vars	<< semantics.HandleFunctionHeaderTwo(X[0]) >>`,
 		Id:         "FunctionHeaderTwo",
 		NTType:     12,
 		Index:      16,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return func() (Attrib, error) {
-        // recupero lo que devolvió FunctionHeader
-        info := X[0].(FuncInfo)
-        localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
-        startQuad := semantics.GetCurrentQuad()+1
-        /*
-        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
-        fmt.Println("  - Parámetros declarados:", len(info.Params))
-        fmt.Println("  - Variables locales contadas:", localVarCount)
-        fmt.Println("  - Cuadruplo inicial:", startQuad)
-        */
-
-        // 1) actualizo la entrada con params y VarTable local
-        if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
-          semantics.Scopes.ExitScope()
-          return nil, err
-        }  
-
-        return info, nil
-      }()
+			return semantics.HandleFunctionHeaderTwo(X[0])
 		},
 	},
 	ProdTabEntry{
 		String: `Function : FunctionHeaderTwo Body r_square_par semicolon	<< func() (Attrib, error) {
-        info := X[0].(FuncInfo) // Obtener la información de la función
+        info := X[0].(semantics.FuncInfo) // Obtener la información de la función
         // Obtener el conteo real de temporales usados
         tempCount := semantics.TempVar
 
@@ -441,7 +301,7 @@ var productionsTable = ProdTab{
         fs.TempCount = tempCount
         semantics.FunctionDirectory.Put(info.Name, fs)
 
-        fmt.Println("  - TempCount", info.Name, "a", tempCount)
+        // fmt.Println("  - TempCount", info.Name, "a", tempCount)
 
         semantics.TempVar = 0
 
@@ -459,7 +319,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        info := X[0].(FuncInfo) // Obtener la información de la función
+        info := X[0].(semantics.FuncInfo) // Obtener la información de la función
         // Obtener el conteo real de temporales usados
         tempCount := semantics.TempVar
 
@@ -472,7 +332,7 @@ var productionsTable = ProdTab{
         fs.TempCount = tempCount
         semantics.FunctionDirectory.Put(info.Name, fs)
 
-        fmt.Println("  - TempCount", info.Name, "a", tempCount)
+        // fmt.Println("  - TempCount", info.Name, "a", tempCount)
 
         semantics.TempVar = 0
 
@@ -522,31 +382,12 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ParamList : id colon Type ParamListTail	<< func() (Attrib, error) {
-        // X[0]=id, X[2]=Type, X[3]=la cola
-        nameTok := X[0].(*token.Token)
-        tipoTok := X[2].(*token.Token)
-        name := string(nameTok.Lit)
-        tipo := string(tipoTok.Lit)
-
-        // Asignar dirección en segmento local
-        dir, err := semantics.AssignAddressToParam(tipo)
+        param, err := semantics.HandleParam(X[0], X[2])
         if err != nil {
             return nil, err
         }
-
-        // Declarar en scope actual
-        err = semantics.DeclareInCurrentScope(name, tipo, dir)
-        if err != nil {
-            return nil, err
-        }
-
-        list := []semantics.VariableStructure{
-          {Name: name, Type: tipo, Address: dir},
-        }
-        if tail, ok := X[3].([]semantics.VariableStructure); ok {
-          list = append(list, tail...)
-        }
-        return list, nil
+        tail, _ := X[3].([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }() >>`,
 		Id:         "ParamList",
 		NTType:     15,
@@ -554,46 +395,23 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // X[0]=id, X[2]=Type, X[3]=la cola
-        nameTok := X[0].(*token.Token)
-        tipoTok := X[2].(*token.Token)
-        name := string(nameTok.Lit)
-        tipo := string(tipoTok.Lit)
-
-        // Asignar dirección en segmento local
-        dir, err := semantics.AssignAddressToParam(tipo)
+        param, err := semantics.HandleParam(X[0], X[2])
         if err != nil {
             return nil, err
         }
-
-        // Declarar en scope actual
-        err = semantics.DeclareInCurrentScope(name, tipo, dir)
-        if err != nil {
-            return nil, err
-        }
-
-        list := []semantics.VariableStructure{
-          {Name: name, Type: tipo, Address: dir},
-        }
-        if tail, ok := X[3].([]semantics.VariableStructure); ok {
-          list = append(list, tail...)
-        }
-        return list, nil
+        tail, _ := X[3].([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `ParamListTail : comma id colon Type ParamListTail	<< func() (Attrib, error) {
-        // X[1]=id, X[3]=Type, X[4]=ParamListTail
-        nameTok := X[1].(*token.Token)
-        tipoTok := X[3].(*token.Token)
-        list := []semantics.VariableStructure{
-          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        param, err := semantics.HandleParam(X[1], X[3])
+        if err != nil {
+            return nil, err
         }
-        if more, ok := X[4].([]semantics.VariableStructure); ok {
-          list = append(list, more...)
-        }
-        return list, nil
+        tail, _ := X[4].([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }() >>`,
 		Id:         "ParamListTail",
 		NTType:     16,
@@ -601,16 +419,12 @@ var productionsTable = ProdTab{
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        // X[1]=id, X[3]=Type, X[4]=ParamListTail
-        nameTok := X[1].(*token.Token)
-        tipoTok := X[3].(*token.Token)
-        list := []semantics.VariableStructure{
-          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        param, err := semantics.HandleParam(X[1], X[3])
+        if err != nil {
+            return nil, err
         }
-        if more, ok := X[4].([]semantics.VariableStructure); ok {
-          list = append(list, more...)
-        }
-        return list, nil
+        tail, _ := X[4].([]semantics.VariableStructure)
+        return append([]semantics.VariableStructure{param}, tail...), nil
       }()
 		},
 	},

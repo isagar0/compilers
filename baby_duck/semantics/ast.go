@@ -1,6 +1,9 @@
 package semantics
 
-import "fmt"
+import (
+	"baby_duck/token"
+	"fmt"
+)
 
 // ------------------------------------------ LIMPIAR ------------------------------------------
 // ResetSemanticState: Limpia todo para un programa nuevo
@@ -250,4 +253,88 @@ func DeclareInCurrentScope(name, tipo string, address int) error {
 	})
 	AddressToName[address] = name
 	return nil
+}
+
+func HandlePHeader(idToken interface{}) (int, error) {
+	token := idToken.(*token.Token)
+	name := string(token.Lit)
+
+	if err := RegisterMainProgram(name); err != nil {
+		return 0, err
+	}
+
+	PushQuad("GOTO", "MAIN", "_", -1)
+	gotoMainQuad := len(Quads) - 1
+	return gotoMainQuad, nil
+}
+
+func HandleVarDecl(ids interface{}, typeToken interface{}) error {
+	idList, ok := ids.([]string)
+	if !ok {
+		return fmt.Errorf("tipo inválido para lista de IDs")
+	}
+
+	tipoToken, ok := typeToken.(*token.Token)
+	if !ok {
+		return fmt.Errorf("tipo inválido para tipo de variable")
+	}
+	tipo := string(tipoToken.Lit)
+
+	return VarDeclaration(idList, tipo)
+}
+
+func HandleFunctionHeader(idToken, paramsToken interface{}) (FuncInfo, error) {
+	token := idToken.(*token.Token)
+	name := string(token.Lit)
+	params := paramsToken.([]VariableStructure)
+
+	if err := RegisterFunction(name); err != nil {
+		return FuncInfo{}, err
+	}
+
+	Scopes.EnterScope()
+	for _, p := range params {
+		if err := VarDeclaration([]string{p.Name}, p.Type); err != nil {
+			Scopes.ExitScope()
+			return FuncInfo{}, err
+		}
+	}
+	return FuncInfo{Name: name, Params: params}, nil
+}
+
+func HandleFunctionHeaderTwo(funcInfo interface{}) (FuncInfo, error) {
+	info := funcInfo.(FuncInfo)
+	localVarCount := Scopes.Current().CountVars() - len(info.Params)
+	startQuad := GetCurrentQuad() + 1
+
+	if err := FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
+		Scopes.ExitScope()
+		return FuncInfo{}, err
+	}
+	return info, nil
+}
+
+func HandleParam(idToken, typeToken interface{}) (VariableStructure, error) {
+	nameTok, ok := idToken.(*token.Token)
+	if !ok {
+		return VariableStructure{}, fmt.Errorf("esperaba token para identificador")
+	}
+	tipoTok, ok := typeToken.(*token.Token)
+	if !ok {
+		return VariableStructure{}, fmt.Errorf("esperaba token para tipo")
+	}
+
+	name := string(nameTok.Lit)
+	tipo := string(tipoTok.Lit)
+
+	dir, err := AssignAddressToParam(tipo)
+	if err != nil {
+		return VariableStructure{}, err
+	}
+
+	if err := DeclareInCurrentScope(name, tipo, dir); err != nil {
+		return VariableStructure{}, err
+	}
+
+	return VariableStructure{Name: name, Type: tipo, Address: dir}, nil
 }
