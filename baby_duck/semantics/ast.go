@@ -57,11 +57,6 @@ func VarDeclaration(ids []string, tipo string) error {
 		var dir int
 		var err error
 
-		// Check current scope
-		if _, exists := tabla.Get(id); exists {
-			return fmt.Errorf("error: variable '%s' ya declarada en este scope", id)
-		}
-
 		// Check parent scopes if in local scope
 		/*
 			if tabla != Scopes.global {
@@ -244,11 +239,6 @@ func AssignAddressToParam(tipo string) (int, error) {
 
 func DeclareInCurrentScope(name, tipo string, address int) error {
 	scope := Scopes.Current()
-
-	// Solo verifica duplicados en el scope actual (no en scopes padres)
-	if _, exists := scope.Get(name); exists {
-		return fmt.Errorf("variable '%s' ya declarada en este scope", name)
-	}
 
 	scope.Put(name, VariableStructure{
 		Name:    name,

@@ -126,13 +126,15 @@ func (vm *VirtualMachine) writeMem(addr int, value interface{}) {
 }
 
 func (vm *VirtualMachine) logMemory() {
-	fmt.Println("--- Memory State ---")
-	for addr, val := range vm.GlobalMemory {
-		fmt.Printf("Global [%d]: %v\n", addr, val)
-	}
-	for addr, val := range vm.LocalMemory {
-		fmt.Printf("Local [%d]: %v\n", addr, val)
-	}
+	/*
+		fmt.Println("--- Memory State ---")
+		for addr, val := range vm.GlobalMemory {
+			fmt.Printf("Global [%d]: %v\n", addr, val)
+		}
+		for addr, val := range vm.LocalMemory {
+			fmt.Printf("Local [%d]: %v\n", addr, val)
+		}
+	*/
 }
 
 // ExecuteNext Ejecuta el siguiente cuádruplo y devuelve false si terminó
@@ -142,7 +144,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 	}
 
 	quad := vm.Quads[vm.IP]
-	fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
+	//fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
 	vm.IP++
 
 	switch quad.Oper {
@@ -197,11 +199,14 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 				panic("String no encontrada en AddressToName")
 			}
 			value := strings.TrimPrefix(name, "const_")
-			fmt.Println(value)
+			fmt.Print(value)
 		} else {
 			value := vm.readMem(addr)
-			fmt.Println(value)
+			fmt.Print(value)
 		}
+
+		// Si el cuadruplo anterior es print, no se hace salto de linea, si es algo diferente, si hace el salto de linea
+		// fmt.Println()
 
 	case "GOTOF":
 		conditionAddr := quad.Left.(int)
@@ -224,7 +229,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		value := vm.readMem(srcAddr)
 		vm.PendingAR[paramIndex] = value
 
-		fmt.Printf("Passing param index %d with value %v\n", paramIndex, value)
+		//fmt.Printf("Passing param index %d with value %v\n", paramIndex, value)
 
 	case "GOSUB":
 		funcName := quad.Left.(string)
@@ -236,8 +241,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 			if paramIndex-1 < len(funcData.Parameters) && paramIndex-1 >= 0 {
 				paramAddr := funcData.Parameters[paramIndex-1].Address + 1 // Usa dirección del parámetro
 				newLocal[paramAddr] = paramValue
-				fmt.Printf("Setting param %d at address %d to %v\n",
-					paramIndex, paramAddr, paramValue)
+				//fmt.Printf("Setting param %d at address %d to %v\n",paramIndex, paramAddr, paramValue)
 
 			} else {
 				panic(fmt.Sprintf("Índice inválido: %d (parámetros: %d)", paramIndex, len(funcData.Parameters)))
