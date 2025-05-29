@@ -32,11 +32,15 @@ var testDataAccept4 = []*TI4{
 			}
 		 ];
 
+		 void printFactorial() [{
+			print("El factorial es:", result);
+		 }];
+
 		 main {
 			n = 5;
 			result = 1;
 			factorial(n);
-			print("El factorial es:", result);
+			printFactorial();
 		 }
 
 		 end`,
