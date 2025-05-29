@@ -1,0 +1,442 @@
+PS C:\Users\Admin\Documents\GitHub\compilers\baby_duck> go test -v
+=== RUN   TestSemanticAccept
+Registered param x → 3000 (actual address)
+  - TempCount factorial a 0
+8000 1
+
+Cuádruplos generados:
+0: (GOTO MAIN _ 3)
+1: (PRINT 3000 _ _)
+2: (ENDFUNC _ _ _)
+3: (ERA _ _ 1)
+4: (PARAMETER 8000 _ 1)
+5: (GOSUB factorial _ 1)
+6: (END _ _ _)
+
+===========================================================
+--- Memory State ---
+Global [8000]: 3
+Executing 0: GOTO MAIN _ 3
+--- Memory State ---
+Global [8000]: 3
+Executing 3: ERA _ _ 1
+--- Memory State ---
+Global [8000]: 3
+Executing 4: PARAMETER 8000 _ 1
+--- Memory State ---
+Global [8000]: 3
+Executing 5: GOSUB factorial _ 1
+--- Memory State ---
+Global [8000]: 3
+Local [0]: 3
+Executing 1: PRINT 3000 _ _
+0
+--- Memory State ---
+Global [8000]: 3
+Local [0]: 3
+Local [3000]: 0
+Executing 2: ENDFUNC _ _ _
+--- Memory State ---
+Global [8000]: 3
+Executing 6: END _ _ _
+
+===========================================================
+--- PASS: TestSemanticAccept (0.00s)
+PASS
+ok      baby_duck       0.026s
+PS C:\Users\Admin\Documents\GitHub\compilers\baby_duck> 
+
+me dio eso con esta prueba:
+var testDataAccept4 = []*TI4{
+	{
+		`program Recursion;
+		 void factorial(x: int) [
+			{
+				print(x);				
+			}
+		 ];
+
+		 main {
+			factorial(3);
+		 }
+
+		 end`,
+	},
+}
+
+no entiendo porque no registra que 3 es lo que le esta pasando osea que x ahora es 3
+
+mira te voy a mandar como esta en mi grammar.bnf:
+/* F_CALL */
+FEra 
+  : id
+  <<
+      func() (Attrib, error) {
+        // 1) Extraer nombre de la función
+        fnTok, ok := $0.(*token.Token)
+        if !ok {
+          return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", $0)
+        }
+        name := string(fnTok.Lit)
+
+        // 3) Comprobar que la función exista
+        _, exists := semantics.FunctionDirectory.Get(name)
+        if !exists {
+          return nil, fmt.Errorf("error: función '%s' no declarada", name)
+        }
+
+        // Tamaño = variables locales + temporales + parámetros
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+        size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+        semantics.PushQuad("ERA", "_", "_", size)
+
+        return $0, nil
+      }()
+    >>
+  ;
+
+FCall
+  : FEra l_round_par FCallList r_round_par semicolon
+    <<
+      func() (Attrib, error) {
+        fnTok := $0.(*token.Token)
+        name := string(fnTok.Lit)
+        raw, _ := semantics.FunctionDirectory.Get(name)
+        fs := raw.(semantics.FunctionStructure)
+
+        n := len(fs.Parameters)
+        args, _ := $2.([]Attrib)
+        
+        // 1. Verificar aridad usando las pilas
+        if len(args) != n {
+            return nil, fmt.Errorf(
+                "error: función '%s' espera %d argumentos, recibió %d",
+                name, n, len(args),
+            )
+        }
+
+        // Sacar argumentos de las pilas (en orden inverso)
+        for i := n - 1; i >= 0; i-- {
+            addr, _ := semantics.PilaO.Pop()
+            tipoRaw, _ := semantics.PTypes.Pop()
+            tipo, _ := tipoRaw.(string)
+            
+            // Verificar tipo
+            expectedType := fs.Parameters[i].Type
+            if tipo != expectedType {
+                return nil, fmt.Errorf(
+                    "error: parámetro %d tipo incorrecto, esperaba %s, obtuvo %s",
+                    n-i, expectedType, tipo,
+                )
+            }
+            
+            // Generar PARAMETER con índice (i+1)
+            semantics.PushQuad("PARAMETER", addr, "_", i+1)
+
+            fmt.Println(addr, i+1)
+        }
+
+        // 4. Generar GOSUB
+        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
+
+        return $0, nil
+      }()
+    >>
+  ;
+
+/* FCallList: siempre devuelve un []Attrib (nunca nil) */
+FCallList
+    : Expression FCallListTail
+      <<
+        func() (Attrib, error) {
+          first := $0.(Attrib)
+          tail, _ := $1.([]Attrib)
+          return append([]Attrib{first}, tail...), nil
+        }()
+      >>
+    | "empty"
+      << []Attrib{}, nil >>
+    ;
+
+/* FCallListTail: cola para concatenar más argumentos */
+ // Helper para pasar nombre+params
+  type FuncInfo struct {
+    Name   string
+    Params []semantics.VariableStructure
+  }
+
+FCallListTail
+    : comma Expression FCallListTail
+      <<
+        func() (Attrib, error) {
+          //fmt.Printf("→ DEBUG FCallListTail: $1=%T (%v), $2=%T (%v)\n", $1, $1, $2, $2)
+          if $1 == nil {
+            return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
+          }
+
+          arg := $1.(Attrib)
+
+          var more []Attrib
+          if $2 != nil {
+            more = $2.([]Attrib)
+          } else {
+            more = []Attrib{}
+          }
+
+          return append([]Attrib{arg}, more...), nil
+        }()
+      >>
+    | "empty"
+      << []Attrib{}, nil >>
+    ;
+
+Params
+    : ParamList
+      << 
+        func() (Attrib, error) {
+          // X[0] es el slice construido en ParamList
+          list, ok := X[0].([]semantics.VariableStructure)
+          if !ok {
+            return nil, fmt.Errorf("esperaba []VariableStructure en ParamList, pero fue %T", X[0])
+          }
+          return list, nil
+        }()
+      >>
+    | "empty"
+      << []semantics.VariableStructure{}, nil >>
+    ;
+
+ParamList
+  : id colon Type ParamListTail
+    <<
+      func() (Attrib, error) {
+        // X[0]=id, X[2]=Type, X[3]=la cola
+        nameTok := X[0].(*token.Token)
+        tipoTok := X[2].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if tail, ok := X[3].([]semantics.VariableStructure); ok {
+          list = append(list, tail...)
+        }
+        return list, nil
+      }()
+    >>
+  ;
+
+ParamListTail
+  : comma id colon Type ParamListTail
+    <<
+      func() (Attrib, error) {
+        // X[1]=id, X[3]=Type, X[4]=ParamListTail
+        nameTok := X[1].(*token.Token)
+        tipoTok := X[3].(*token.Token)
+        list := []semantics.VariableStructure{
+          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+        }
+        if more, ok := X[4].([]semantics.VariableStructure); ok {
+          list = append(list, more...)
+        }
+        return list, nil
+      }()
+    >>
+  | "empty"
+    << []semantics.VariableStructure{}, nil >>
+  ;
+
+  en mi ast .go:
+  // FuncDeclaration: Actualiza la entrada creada por RegisterFunction
+func FuncDeclaration(name string, params []VariableStructure, localVarCount, startQuad, tempCount int) error {
+	// Verifica que no haya parámetros duplicados
+	if err := ValidateParams(params); err != nil {
+		return err
+	}
+
+	// Busca la función en el directorio, marca error
+	raw, exists := FunctionDirectory.Get(name)
+	if !exists {
+		return fmt.Errorf("error interno: función '%s' no registrada previamente", name)
+	}
+
+	// Convierte la entrada a una estructura de función
+	fs := raw.(FunctionStructure)
+
+	// Asigna los parámetros recibidos a la función
+	fs.Parameters = params
+
+	for i, param := range params {
+		// paramName := fmt.Sprintf("param_%d", i)
+		// Get the actual address from the local scope
+		if raw, exists := Scopes.Current().Get(param.Name); exists {
+			vs := raw.(VariableStructure)
+			// Registrar con nombre especial para depuración			/
+			// return fmt.Errorf("parameter %s already exists", param.Name)
+			AddressToName[vs.Address] = fmt.Sprintf("%s_param_%d", name, i+1)
+			fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
+		}
+	}
+
+	// Asigna los nuevos campos
+	fs.ParamCount = len(params)      // Número de parámetros
+	fs.LocalVarCount = localVarCount // Variables locales
+	fs.StartQuad = startQuad         // Cuadruplo inicial
+	fs.TempCount = tempCount         // Numero temporales
+
+	// Asocia la tabla local de variables (scope actual donde se declararon los params)
+	fs.VarTable = Scopes.Current()
+
+	// Actualiza el directorio
+	FunctionDirectory.Put(name, fs)
+
+	return nil
+}
+
+// ValidateParams: Verifica que los parámetros de una función no estén duplicados
+func ValidateParams(params []VariableStructure) error {
+	// Diccionario temporal para llevar el control de nombres ya vistos
+	paramSet := NewDictionary()
+
+	// Recorre cada parametro recibido
+	for _, param := range params {
+		// Verifica si el parametro ya fue declarada, marca error
+		if _, exists := paramSet.Get(param.Name); exists {
+			return fmt.Errorf("error: parámetro '%s' duplicado en la función", param.Name)
+		}
+
+		// Si no existe, se agrega para futuras comparaciones
+		paramSet.Put(param.Name, param)
+	}
+	return nil
+}
+
+// RegisterFunction: Crea la entrada de la función con nombre, retorno void
+func RegisterFunction(name string) error {
+	// Verifica si ya existe una función con el mismo nombre, marca error
+	if _, exists := FunctionDirectory.Get(name); exists {
+		return fmt.Errorf("error: función '%s' ya declarada", name)
+	}
+
+	// Crea una nueva tabla de variables locales para esta función
+	localTable := NewDictionary()
+
+	/*fmt.Printf("[DEBUG] RegisterFunction %s → local scope %p\n",
+	name, localTable)*/
+
+	// Registra la función en el directorio
+	FunctionDirectory.Put(name, FunctionStructure{
+		Name:       name,                  // Nombre
+		Parameters: []VariableStructure{}, // Parametros (vacios)
+		VarTable:   localTable,            // Tabla local de variables
+		ParamCount: 0,
+		TempCount:  0,
+		StartQuad:  len(Quads),
+	})
+
+	//fmt.Printf("[DEBUG] RegisterFunction: %d\n", len(Quads))
+
+	return nil
+}
+
+// VarDeclaration: Procesa la declaración de variables en el scope actual
+func VarDeclaration(ids []string, tipo string) error {
+	// Usa tabla activa del scope
+	tabla := Scopes.Current()
+
+	// Recorre cada identificador en la lista de variables a declarar
+	for _, id := range ids {
+		var dir int
+		var err error
+
+		// Check current scope
+		if _, exists := tabla.Get(id); exists {
+			return fmt.Errorf("error: variable '%s' ya declarada en este scope", id)
+		}
+
+		// Check parent scopes if in local scope
+		if tabla != Scopes.global {
+			if _, exists := Scopes.global.Get(id); exists {
+				return fmt.Errorf("error: variable '%s' ya existe en scope global", id)
+			}
+		}
+
+		// Determina si es global o local
+		var segmento *SegmentGroup
+		if Scopes.Current() == Scopes.global {
+			segmento = &memory.Global
+			// fmt.Printf("Global var %s at %d\n", id, dir)
+		} else {
+			segmento = &memory.Local
+			//fmt.Printf("Local var %s at %d\n", id, dir)
+		}
+
+		switch tipo {
+		case "int":
+			dir, err = segmento.Ints.GetNext()
+		case "float":
+			dir, err = segmento.Floats.GetNext()
+		default:
+			return fmt.Errorf("tipo no soportado: %s", tipo)
+		}
+		if err != nil {
+			return err
+		}
+
+		// Agrega la variable a la tabla con dirección virtual
+		tabla.Put(id, VariableStructure{
+			Name:    id,
+			Type:    tipo,
+			Address: dir,
+		})
+		AddressToName[dir] = id
+		//fmt.Printf("Declared %s at address %d (type %s)\n", id, dir, tipo)
+		/*scope := "global"
+		if Scopes.Current() != Scopes.global {
+			scope = "local"
+		}
+		fmt.Printf("[DEBUG] Declaradas variables %v en scope %s (tipo %s)\n", ids, scope, tipo)*/
+	}
+
+	/*
+		// Imprimir el contenido del scope actual
+		fmt.Println(">>> Contenido del scope actual antes de declarar:")
+		tabla.PrintOrdered()
+		fmt.Println(">>> Fin del scope actual")
+	*/
+
+	return nil
+}
+
+parte de vm.go:
+case "PARAMETER":
+		srcAddr := quad.Left.(int)
+		paramIndex := quad.Result.(int)
+		value := vm.readMem(srcAddr)
+		vm.PendingAR[paramIndex] = value
+
+	case "GOSUB":
+		funcName := quad.Left.(string)
+		funcData := vm.FuncDir[funcName]
+
+		// Crear memoria local usando los índices de parámetros
+		newLocal := make(map[int]interface{})
+		for paramIndex, paramValue := range vm.PendingAR {
+			// Verificar que el índice esté dentro del rango de parámetros
+			if paramIndex-1 < len(funcData.Parameters) && paramIndex-1 >= 0 {
+				param := funcData.Parameters[paramIndex-1]
+				newLocal[param.Address] = paramValue
+			} else {
+				panic(fmt.Sprintf("Índice de parámetro inválido: %d", paramIndex))
+			}
+		}
+
+		vm.CallStack = append(vm.CallStack, ActivationRecord{
+			ReturnIP: vm.IP,
+			LocalMem: vm.LocalMemory,
+		})
+
+		vm.LocalMemory = newLocal
+		vm.IP = funcData.StartQuad
+		vm.PendingAR = nil
+
+tengo igual mas archivos quads.go, memory.go, scope.go, semantic_cube.go, types.go, vm.go me dices que quieras que te mande

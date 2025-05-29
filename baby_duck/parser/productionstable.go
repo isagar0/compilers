@@ -384,6 +384,12 @@ var productionsTable = ProdTab{
         info := X[0].(FuncInfo)
         localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
         startQuad := semantics.GetCurrentQuad()+1
+        /*
+        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
+        fmt.Println("  - Parámetros declarados:", len(info.Params))
+        fmt.Println("  - Variables locales contadas:", localVarCount)
+        fmt.Println("  - Cuadruplo inicial:", startQuad)
+        */
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
@@ -403,6 +409,12 @@ var productionsTable = ProdTab{
         info := X[0].(FuncInfo)
         localVarCount := semantics.Scopes.Current().CountVars() - len(info.Params)
         startQuad := semantics.GetCurrentQuad()+1
+        /*
+        fmt.Println("\n[DEBUG] Registrando función:", info.Name)
+        fmt.Println("  - Parámetros declarados:", len(info.Params))
+        fmt.Println("  - Variables locales contadas:", localVarCount)
+        fmt.Println("  - Cuadruplo inicial:", startQuad)
+        */
 
         // 1) actualizo la entrada con params y VarTable local
         if err := semantics.FuncDeclaration(info.Name, info.Params, localVarCount, startQuad, 0); err != nil {
@@ -513,8 +525,23 @@ var productionsTable = ProdTab{
         // X[0]=id, X[2]=Type, X[3]=la cola
         nameTok := X[0].(*token.Token)
         tipoTok := X[2].(*token.Token)
+        name := string(nameTok.Lit)
+        tipo := string(tipoTok.Lit)
+
+        // Asignar dirección en segmento local
+        dir, err := semantics.AssignAddressToParam(tipo)
+        if err != nil {
+            return nil, err
+        }
+
+        // Declarar en scope actual
+        err = semantics.DeclareInCurrentScope(name, tipo, dir)
+        if err != nil {
+            return nil, err
+        }
+
         list := []semantics.VariableStructure{
-          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+          {Name: name, Type: tipo, Address: dir},
         }
         if tail, ok := X[3].([]semantics.VariableStructure); ok {
           list = append(list, tail...)
@@ -530,8 +557,23 @@ var productionsTable = ProdTab{
         // X[0]=id, X[2]=Type, X[3]=la cola
         nameTok := X[0].(*token.Token)
         tipoTok := X[2].(*token.Token)
+        name := string(nameTok.Lit)
+        tipo := string(tipoTok.Lit)
+
+        // Asignar dirección en segmento local
+        dir, err := semantics.AssignAddressToParam(tipo)
+        if err != nil {
+            return nil, err
+        }
+
+        // Declarar en scope actual
+        err = semantics.DeclareInCurrentScope(name, tipo, dir)
+        if err != nil {
+            return nil, err
+        }
+
         list := []semantics.VariableStructure{
-          {Name: string(nameTok.Lit), Type: string(tipoTok.Lit)},
+          {Name: name, Type: tipo, Address: dir},
         }
         if tail, ok := X[3].([]semantics.VariableStructure); ok {
           list = append(list, tail...)
@@ -1556,40 +1598,25 @@ var productionsTable = ProdTab{
             )
         }
 
-        argsAddr := make([]interface{}, n)
-        argsType := make([]string, n)
-
-        // 2. Sacar argumentos de las pilas (en orden inverso)
+        // Sacar argumentos de las pilas (en orden inverso)
         for i := n - 1; i >= 0; i-- {
-            addr, err := semantics.PilaO.Pop()
-            if err != nil {
-                return nil, fmt.Errorf("error al obtener argumento %d: %v", i+1, err)
-            }
+            addr, _ := semantics.PilaO.Pop()
+            tipoRaw, _ := semantics.PTypes.Pop()
+            tipo, _ := tipoRaw.(string)
             
-            tipoRaw, err := semantics.PTypes.Pop()
-            if err != nil {
-                return nil, fmt.Errorf("error al obtener tipo %d: %v", i+1, err)
-            }
-            
-            tipo, ok := tipoRaw.(string)
-            if !ok {
-                return nil, fmt.Errorf("tipo inválido para argumento %d", i+1)
-            }
-            
-            argsAddr[i] = addr
-            argsType[i] = tipo
-        }
-
-        // 3. Verificar tipos y generar PARAMETER
-        for k := 0; k < n; k++ {
-            expectedType := fs.Parameters[k].Type
-            if argsType[k] != expectedType {
+            // Verificar tipo
+            expectedType := fs.Parameters[i].Type
+            if tipo != expectedType {
                 return nil, fmt.Errorf(
                     "error: parámetro %d tipo incorrecto, esperaba %s, obtuvo %s",
-                    k+1, expectedType, argsType[k],
+                    n-i, expectedType, tipo,
                 )
             }
-            semantics.PushQuad("PARAMETER", argsAddr[k], "_", k+1)
+            
+            // Generar PARAMETER con índice (i+1)
+            semantics.PushQuad("PARAMETER", addr, "_", i+1)
+
+            fmt.Println(addr, i+1)
         }
 
         // 4. Generar GOSUB
@@ -1619,40 +1646,25 @@ var productionsTable = ProdTab{
             )
         }
 
-        argsAddr := make([]interface{}, n)
-        argsType := make([]string, n)
-
-        // 2. Sacar argumentos de las pilas (en orden inverso)
+        // Sacar argumentos de las pilas (en orden inverso)
         for i := n - 1; i >= 0; i-- {
-            addr, err := semantics.PilaO.Pop()
-            if err != nil {
-                return nil, fmt.Errorf("error al obtener argumento %d: %v", i+1, err)
-            }
+            addr, _ := semantics.PilaO.Pop()
+            tipoRaw, _ := semantics.PTypes.Pop()
+            tipo, _ := tipoRaw.(string)
             
-            tipoRaw, err := semantics.PTypes.Pop()
-            if err != nil {
-                return nil, fmt.Errorf("error al obtener tipo %d: %v", i+1, err)
-            }
-            
-            tipo, ok := tipoRaw.(string)
-            if !ok {
-                return nil, fmt.Errorf("tipo inválido para argumento %d", i+1)
-            }
-            
-            argsAddr[i] = addr
-            argsType[i] = tipo
-        }
-
-        // 3. Verificar tipos y generar PARAMETER
-        for k := 0; k < n; k++ {
-            expectedType := fs.Parameters[k].Type
-            if argsType[k] != expectedType {
+            // Verificar tipo
+            expectedType := fs.Parameters[i].Type
+            if tipo != expectedType {
                 return nil, fmt.Errorf(
                     "error: parámetro %d tipo incorrecto, esperaba %s, obtuvo %s",
-                    k+1, expectedType, argsType[k],
+                    n-i, expectedType, tipo,
                 )
             }
-            semantics.PushQuad("PARAMETER", argsAddr[k], "_", k+1)
+            
+            // Generar PARAMETER con índice (i+1)
+            semantics.PushQuad("PARAMETER", addr, "_", i+1)
+
+            fmt.Println(addr, i+1)
         }
 
         // 4. Generar GOSUB

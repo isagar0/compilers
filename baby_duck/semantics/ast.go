@@ -63,11 +63,13 @@ func VarDeclaration(ids []string, tipo string) error {
 		}
 
 		// Check parent scopes if in local scope
-		if tabla != Scopes.global {
-			if _, exists := Scopes.global.Get(id); exists {
-				return fmt.Errorf("error: variable '%s' ya existe en scope global", id)
+		/*
+			if tabla != Scopes.global {
+				if _, exists := Scopes.global.Get(id); exists {
+					return fmt.Errorf("error: variable '%s' ya existe en scope global", id)
+				}
 			}
-		}
+		*/
 
 		// Determina si es global o local
 		var segmento *SegmentGroup
@@ -186,14 +188,15 @@ func FuncDeclaration(name string, params []VariableStructure, localVarCount, sta
 
 	// Asigna los parámetros recibidos a la función
 	fs.Parameters = params
-
-	for _, param := range params {
+	for i, param := range params {
+		// paramName := fmt.Sprintf("param_%d", i)
 		// Get the actual address from the local scope
 		if raw, exists := Scopes.Current().Get(param.Name); exists {
 			vs := raw.(VariableStructure)
-			AddressToName[vs.Address] = param.Name
+			// Registrar con nombre especial para depuración			/
 			// return fmt.Errorf("parameter %s already exists", param.Name)
-			//fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
+			AddressToName[vs.Address] = fmt.Sprintf("%s_param_%d", name, i+1)
+			fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
 		}
 	}
 
@@ -226,4 +229,32 @@ func (d *Dictionary) CountVars() int {
 // GetCurrentQuad: Obtiene el índice del último cuadruplo generado
 func GetCurrentQuad() int {
 	return len(Quads) - 1
+}
+
+func AssignAddressToParam(tipo string) (int, error) {
+	switch tipo {
+	case "int":
+		return memory.Local.Ints.GetNext()
+	case "float":
+		return memory.Local.Floats.GetNext()
+	default:
+		return 0, fmt.Errorf("tipo no soportado: %s", tipo)
+	}
+}
+
+func DeclareInCurrentScope(name, tipo string, address int) error {
+	scope := Scopes.Current()
+
+	// Solo verifica duplicados en el scope actual (no en scopes padres)
+	if _, exists := scope.Get(name); exists {
+		return fmt.Errorf("variable '%s' ya declarada en este scope", name)
+	}
+
+	scope.Put(name, VariableStructure{
+		Name:    name,
+		Type:    tipo,
+		Address: address,
+	})
+	AddressToName[address] = name
+	return nil
 }

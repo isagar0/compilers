@@ -125,6 +125,16 @@ func (vm *VirtualMachine) writeMem(addr int, value interface{}) {
 	}
 }
 
+func (vm *VirtualMachine) logMemory() {
+	fmt.Println("--- Memory State ---")
+	for addr, val := range vm.GlobalMemory {
+		fmt.Printf("Global [%d]: %v\n", addr, val)
+	}
+	for addr, val := range vm.LocalMemory {
+		fmt.Printf("Local [%d]: %v\n", addr, val)
+	}
+}
+
 // ExecuteNext Ejecuta el siguiente cuádruplo y devuelve false si terminó
 func (vm *VirtualMachine) ExecuteNext() bool {
 	if vm.IP >= len(vm.Quads) {
@@ -132,6 +142,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 	}
 
 	quad := vm.Quads[vm.IP]
+	fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
 	vm.IP++
 
 	switch quad.Oper {
@@ -209,20 +220,36 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 
 	case "PARAMETER":
 		srcAddr := quad.Left.(int)
-		paramIndex := quad.Result.(int)
+		paramIndex := quad.Result.(int) // debe ser 0-based
 		value := vm.readMem(srcAddr)
 		vm.PendingAR[paramIndex] = value
+
+		fmt.Printf("Passing param index %d with value %v\n", paramIndex, value)
 
 	case "GOSUB":
 		funcName := quad.Left.(string)
 		funcData := vm.FuncDir[funcName]
+
+		// Crear memoria local usando los índices de parámetros
+		newLocal := make(map[int]interface{})
+		for paramIndex, paramValue := range vm.PendingAR {
+			if paramIndex-1 < len(funcData.Parameters) && paramIndex-1 >= 0 {
+				paramAddr := funcData.Parameters[paramIndex-1].Address + 1 // Usa dirección del parámetro
+				newLocal[paramAddr] = paramValue
+				fmt.Printf("Setting param %d at address %d to %v\n",
+					paramIndex, paramAddr, paramValue)
+
+			} else {
+				panic(fmt.Sprintf("Índice inválido: %d (parámetros: %d)", paramIndex, len(funcData.Parameters)))
+			}
+		}
 
 		vm.CallStack = append(vm.CallStack, ActivationRecord{
 			ReturnIP: vm.IP,
 			LocalMem: vm.LocalMemory,
 		})
 
-		vm.LocalMemory = vm.PendingAR
+		vm.LocalMemory = newLocal
 		vm.IP = funcData.StartQuad
 		vm.PendingAR = nil
 
@@ -242,6 +269,8 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		panic("Operación no soportada: " + quad.Oper)
 	}
 
+	vm.logMemory()
+
 	return true
 }
 
@@ -249,6 +278,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 func (vm *VirtualMachine) Run() {
 	vm.InitializeMemory()
 	vm.LocalMemory = make(map[int]interface{}) // Memoria para main
+	vm.logMemory()
 	for vm.ExecuteNext() {
 	}
 }

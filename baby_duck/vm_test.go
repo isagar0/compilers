@@ -15,32 +15,17 @@ type TI4 struct {
 var testDataAccept4 = []*TI4{
 	{
 		`program Recursion;
-
-		var n, result: int;
-
-		void factorial(x: int) [
-			var temp: int;
+		 void factorial(x: int, y: int) [
 			{
-				if (x < 1) {
-					if (x > -1) {
-						result = 1;
-					};
-				} else {
-					n = x - 1;
-					factorial(n);
-					result = result * x;
-				};
+				print(x);				
 			}
-		];
+		 ];
 
-		main {
-			n = 5;
-			result = 1;
-			factorial(n);
-			print("El factorial es:", result);
-		}
+		 main {
+			factorial(3, 7);
+		 }
 
-		end`,
+		 end`,
 	},
 }
 
@@ -62,6 +47,8 @@ func TestSemanticAccept(t *testing.T) {
 		fmt.Println("\n===========================================================")
 
 		// Ejecutar cuádruplos
+		// print(semantics.FunctionDirectory)
+		// fmt.Println("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		vm := semantics.NewVirtualMachine(semantics.Quads, semantics.FunctionDirectory)
 		vm.Run()
 
