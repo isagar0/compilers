@@ -44,7 +44,7 @@ type SemanticCube map[string]map[string]map[string]string
 
 // QuadStructure: Estructura de un Quad
 type QuadStructure struct {
-	Oper   string      // Operador
+	Oper   int         // Operador
 	Left   interface{} // Operando izquierdo
 	Right  interface{} // Operando derecho
 	Result interface{} // Resultado

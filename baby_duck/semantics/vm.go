@@ -147,13 +147,13 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 	//fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
 	vm.IP++
 
-	switch quad.Oper {
+	switch FixedAddresses[quad.Oper] {
 	case "+", "-", "*", "/":
 		left := vm.readMem(quad.Left.(int))
 		right := vm.readMem(quad.Right.(int))
 		resultAddr := quad.Result.(int)
 
-		switch quad.Oper {
+		switch FixedAddresses[quad.Oper] {
 		case "+":
 			vm.writeMem(resultAddr, add(left, right))
 		case "-":
@@ -173,7 +173,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		rightVal := toFloat(right)
 
 		var result bool
-		switch quad.Oper {
+		switch FixedAddresses[quad.Oper] {
 		case "<":
 			result = leftVal < rightVal
 		case ">":
@@ -270,7 +270,7 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		return false
 
 	default:
-		panic("Operación no soportada: " + quad.Oper)
+		panic(fmt.Sprintf("Operación no soportada: %d", quad.Oper))
 	}
 
 	vm.logMemory()

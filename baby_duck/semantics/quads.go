@@ -83,28 +83,28 @@ func PushOperandDebug(value interface{}, tipo string) {
 }
 
 // PushOp: En lugar de haer push directo lo hace desde acá para debuggear
-func PushOp(op string) {
+func PushOp(op int) {
 	//fmt.Printf("→ PUSH OPERADOR: %s\n", op)
 	POper.Push(op)
 }
 
 // PushQuad: Agrega un cuádruplo a la lista global
-func PushQuad(oper string, left, right, res interface{}) {
+func PushQuad(oper int, left, right, res interface{}) {
 	Quads = append(Quads, QuadStructure{oper, left, right, res})
 }
 
 // ProcessOperation: Agregar quads
-func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
+func ProcessOperation(validOps []int, stopOnFakeBottom bool) error {
 	for {
 		top, err := POper.Peek()
 		if err != nil {
 			return nil
 		}
 
-		op := top.(string)
+		op := top.(int)
 
 		// Caso especial: fake bottom
-		if stopOnFakeBottom && op == "⏊" {
+		if stopOnFakeBottom && op == FAKEBOTTOM {
 			POper.Pop()
 			break
 		}
@@ -137,7 +137,7 @@ func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
 			return fmt.Errorf("error: tipos no son string: left=%T, right=%T", leftType, rightType)
 		}
 
-		resType, err := GetResultType(ltype, rtype, op)
+		resType, err := GetResultType(ltype, rtype, FixedAddresses[op])
 		if err != nil {
 			return err
 		}
@@ -166,25 +166,25 @@ func ProcessOperation(validOps []string, stopOnFakeBottom bool) error {
 
 // DoAddSub: Agregar quad para suma o resta
 func DoAddSub() error {
-	return ProcessOperation([]string{"+", "-"}, false)
+	return ProcessOperation([]int{ADD, REST}, false)
 }
 
 // DoMulDiv: Agregar quad para multiplicación o divición
 func DoMulDiv() error {
-	return ProcessOperation([]string{"*", "/"}, false)
+	return ProcessOperation([]int{MULTIPLY, DIVIDE}, false)
 }
 
 // DoRelational: Agregar quad para operadores relacionales
 func DoRelational() error {
-	if top, err := POper.Peek(); err != nil || !(top.(string) == "<" || top.(string) == ">" || top.(string) == "!=") {
+	if top, err := POper.Peek(); err != nil || !(top.(int) == LESSTHAN || top.(int) == MORETHAN || top.(int) == NOTEQUAL) {
 		return nil
 	}
-	return ProcessOperation([]string{"<", ">", "!="}, false)
+	return ProcessOperation([]int{LESSTHAN, MORETHAN, NOTEQUAL}, false)
 }
 
 // PopUntilFakeBottom: Agregar simbolo para parentesis
 func PopUntilFakeBottom() error {
-	return ProcessOperation([]string{"+", "-", "*", "/"}, true)
+	return ProcessOperation([]int{ADD, REST, MULTIPLY, DIVIDE}, true)
 }
 
 // PrintStacks: Imprime las pilas actuales
@@ -202,7 +202,7 @@ func PrintStacks() {
 func PrintQuads() {
 	fmt.Println("\nCuádruplos generados:")
 	for i, q := range Quads {
-		fmt.Printf("%d: (%s %v %v %v)\n", i, q.Oper, q.Left, q.Right, q.Result)
+		fmt.Printf("%d: (%d %v %v %v)\n", i, q.Oper, q.Left, q.Right, q.Result)
 	}
 }
 

@@ -38,7 +38,7 @@ func HandlePHeader(idToken interface{}) (int, error) {
 		return 0, err
 	}
 
-	PushQuad("GOTO", "MAIN", "_", -1)
+	PushQuad(GOTO, MAIN, "_", -1)
 	gotoMainQuad := len(Quads) - 1
 	return gotoMainQuad, nil
 }
