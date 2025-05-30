@@ -6,21 +6,9 @@ import (
 	"strings"
 )
 
-type ActivationRecord struct {
-	ReturnIP int
-	LocalMem map[int]interface{}
-}
+// -------------------------------------------- VM --------------------------------------------
 
-type VirtualMachine struct {
-	Quads        []QuadStructure
-	GlobalMemory map[int]interface{} // Memoria global (variables + constantes)
-	LocalMemory  map[int]interface{} // Memoria local (función actual)
-	IP           int
-	CallStack    []ActivationRecord           // Pila de llamadas
-	FuncDir      map[string]FunctionStructure // Directorio de funciones
-	PendingAR    map[int]interface{}          // Registro de activación pendiente (para ERA)
-}
-
+// NewVirtualMachine: Inicializa la VM
 func NewVirtualMachine(quads []QuadStructure, funcDir *Dictionary) *VirtualMachine {
 	// Convertir Dictionary a map[string]FunctionStructure
 	funcDirMap := make(map[string]FunctionStructure)
@@ -41,7 +29,7 @@ func NewVirtualMachine(quads []QuadStructure, funcDir *Dictionary) *VirtualMachi
 	}
 }
 
-// InitializeMemory Inicializa la memoria con constantes y variables globales
+// InitializeMemory: Inicializa la memoria con constantes y variables globales
 func (vm *VirtualMachine) InitializeMemory() {
 	// Cargar constantes desde AddressToName
 	for addr, name := range AddressToName {
@@ -52,6 +40,7 @@ func (vm *VirtualMachine) InitializeMemory() {
 				vm.GlobalMemory[addr] = intVal
 				continue
 			}
+
 			// Intentar convertir a float
 			if floatVal, err := strconv.ParseFloat(valueStr, 64); err == nil {
 				vm.GlobalMemory[addr] = floatVal
@@ -75,7 +64,8 @@ func (vm *VirtualMachine) InitializeMemory() {
 	}
 }
 
-func (vm *VirtualMachine) readMem(addr int) interface{} {
+// ReadMem: Retorna valor almacenado en una dirección de memoria
+func (vm *VirtualMachine) ReadMem(addr int) interface{} {
 	// Rangos de memoria global/constantes
 	if (addr >= 1000 && addr <= 2999) || (addr >= 8000) {
 		val, ok := vm.GlobalMemory[addr]
@@ -117,7 +107,8 @@ func (vm *VirtualMachine) readMem(addr int) interface{} {
 	return val
 }
 
-func (vm *VirtualMachine) writeMem(addr int, value interface{}) {
+// WriteMem: Escribe valor en memorial global o local
+func (vm *VirtualMachine) WriteMem(addr int, value interface{}) {
 	if (addr >= 1000 && addr <= 2999) || (addr >= 8000) {
 		vm.GlobalMemory[addr] = value
 	} else {
@@ -125,7 +116,8 @@ func (vm *VirtualMachine) writeMem(addr int, value interface{}) {
 	}
 }
 
-func (vm *VirtualMachine) logMemory() {
+// LogMemory: Imprime estado actual de la memorias
+func (vm *VirtualMachine) LogMemory() {
 	/*
 		fmt.Println("--- Memory State ---")
 		for addr, val := range vm.GlobalMemory {
@@ -137,41 +129,51 @@ func (vm *VirtualMachine) logMemory() {
 	*/
 }
 
-// ExecuteNext Ejecuta el siguiente cuádruplo y devuelve false si terminó
+// -------------------------------------------- EXECUTE --------------------------------------------
+
+// ExecuteNext: Ejecuta el siguiente cuádruplo y devuelve false si terminó
 func (vm *VirtualMachine) ExecuteNext() bool {
+	// Verifica si IP se paso del numero de quadruplos
 	if vm.IP >= len(vm.Quads) {
 		return false
 	}
 
+	// Obtiene cuadruplo actual y avanza
 	quad := vm.Quads[vm.IP]
-	//fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
 	vm.IP++
+	//fmt.Printf("Executing %d: %s %v %v %v\n", vm.IP, quad.Oper, quad.Left, quad.Right, quad.Result)
 
+	// Determina tipo de operación a ejecutar
 	switch FixedAddresses[quad.Oper] {
 	case "+", "-", "*", "/":
-		left := vm.readMem(quad.Left.(int))
-		right := vm.readMem(quad.Right.(int))
+		// Lee operando izquierdo y derecho desde memoria
+		left := vm.ReadMem(quad.Left.(int))
+		right := vm.ReadMem(quad.Right.(int))
 		resultAddr := quad.Result.(int)
 
+		// Ejecuta la operación
 		switch FixedAddresses[quad.Oper] {
 		case "+":
-			vm.writeMem(resultAddr, add(left, right))
+			vm.WriteMem(resultAddr, Add(left, right))
 		case "-":
-			vm.writeMem(resultAddr, sub(left, right))
+			vm.WriteMem(resultAddr, Sub(left, right))
 		case "*":
-			vm.writeMem(resultAddr, mul(left, right))
+			vm.WriteMem(resultAddr, Mul(left, right))
 		case "/":
-			vm.writeMem(resultAddr, div(left, right))
+			vm.WriteMem(resultAddr, Div(left, right))
 		}
 
 	case "<", ">", "!=", "==":
-		left := vm.readMem(quad.Left.(int))
-		right := vm.readMem(quad.Right.(int))
+		// Lee operando izquierdo y derecho desde memoria
+		left := vm.ReadMem(quad.Left.(int))
+		right := vm.ReadMem(quad.Right.(int))
 		resultAddr := quad.Result.(int)
 
-		leftVal := toFloat(left)
-		rightVal := toFloat(right)
+		// Convertir para comparación
+		leftVal := ToFloat(left)
+		rightVal := ToFloat(right)
 
+		// Ejecuta la evaluacion
 		var result bool
 		switch FixedAddresses[quad.Oper] {
 		case "<":
@@ -184,52 +186,58 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 			result = leftVal == rightVal
 		}
 
-		vm.writeMem(resultAddr, result)
+		vm.WriteMem(resultAddr, result)
 
 	case "=":
-		source := vm.readMem(quad.Left.(int))
+		// Copia el valor de una dirección a otra
+		source := vm.ReadMem(quad.Left.(int))
 		destAddr := quad.Result.(int)
-		vm.writeMem(destAddr, source)
+		vm.WriteMem(destAddr, source)
 
 	case "PRINT":
 		addr := quad.Left.(int)
+		// Si es string constante, obtiene su valor
 		if addr >= 10000 && addr <= 10999 {
 			name, exists := AddressToName[addr]
 			if !exists {
 				panic("String no encontrada en AddressToName")
 			}
-			value := strings.TrimPrefix(name, "const_")
-			fmt.Print(value)
-		} else {
-			value := vm.readMem(addr)
-			fmt.Print(value)
-		}
 
-		// Si el cuadruplo anterior es print, no se hace salto de linea, si es algo diferente, si hace el salto de linea
-		// fmt.Println()
+			value := strings.TrimPrefix(name, "const_")
+			value = strings.Trim(value, "\"")
+
+			fmt.Println(value)
+		} else {
+			// Si no es string lee el valor de memoria
+			value := vm.ReadMem(addr)
+			fmt.Println(value)
+		}
 
 	case "GOTOF":
 		conditionAddr := quad.Left.(int)
-		condition := vm.readMem(conditionAddr).(bool)
+		condition := vm.ReadMem(conditionAddr).(bool)
+
 		if !condition {
+			// Salta al cuádruplo indicado si la conficion es falsa
 			target := quad.Result.(int)
 			vm.IP = target
 		}
 
 	case "GOTO":
+		// Salta al cuadruplo destino imediatamente
 		target := quad.Result.(int)
 		vm.IP = target
 
 	case "ERA":
+		// Inicializa ActivationRecord para parametros
 		vm.PendingAR = make(map[int]interface{})
 
 	case "PARAMETER":
+		// Asigna valor a un parametro en ActivationRecord temporal
 		srcAddr := quad.Left.(int)
-		paramIndex := quad.Result.(int) // debe ser 0-based
-		value := vm.readMem(srcAddr)
+		paramIndex := quad.Result.(int)
+		value := vm.ReadMem(srcAddr)
 		vm.PendingAR[paramIndex] = value
-
-		//fmt.Printf("Passing param index %d with value %v\n", paramIndex, value)
 
 	case "GOSUB":
 		funcName := quad.Left.(string)
@@ -238,21 +246,23 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		// Crear memoria local usando los índices de parámetros
 		newLocal := make(map[int]interface{})
 		for paramIndex, paramValue := range vm.PendingAR {
+			// Asegura indice sea valido dentro del arreglo parametro
 			if paramIndex-1 < len(funcData.Parameters) && paramIndex-1 >= 0 {
 				paramAddr := funcData.Parameters[paramIndex-1].Address + 1 // Usa dirección del parámetro
 				newLocal[paramAddr] = paramValue
-				//fmt.Printf("Setting param %d at address %d to %v\n",paramIndex, paramAddr, paramValue)
 
 			} else {
 				panic(fmt.Sprintf("Índice inválido: %d (parámetros: %d)", paramIndex, len(funcData.Parameters)))
 			}
 		}
 
+		// Guarda el estado actual pila llamadas
 		vm.CallStack = append(vm.CallStack, ActivationRecord{
 			ReturnIP: vm.IP,
 			LocalMem: vm.LocalMemory,
 		})
 
+		// Cambia la memoria local y salta cuadruplo de inicio
 		vm.LocalMemory = newLocal
 		vm.IP = funcData.StartQuad
 		vm.PendingAR = nil
@@ -261,34 +271,40 @@ func (vm *VirtualMachine) ExecuteNext() bool {
 		if len(vm.CallStack) == 0 {
 			panic("ENDFUNC sin llamada activa")
 		}
+
+		// Finaliza función actual restaura estado anterior
 		frame := vm.CallStack[len(vm.CallStack)-1]
 		vm.CallStack = vm.CallStack[:len(vm.CallStack)-1]
 		vm.LocalMemory = frame.LocalMem
 		vm.IP = frame.ReturnIP
 
-	case "END": // Manejar fin del programa
+	case "END":
+		// Marca fin del programa
 		return false
 
 	default:
+		// Si es desconocida lanza error
 		panic(fmt.Sprintf("Operación no soportada: %d", quad.Oper))
 	}
 
-	vm.logMemory()
+	vm.LogMemory()
 
 	return true
 }
 
-// Run Ejecuta todos los cuádruplos hasta terminar
+// Run: Ejecuta todos los cuádruplos hasta terminar
 func (vm *VirtualMachine) Run() {
 	vm.InitializeMemory()
 	vm.LocalMemory = make(map[int]interface{}) // Memoria para main
-	vm.logMemory()
+	vm.LogMemory()
 	for vm.ExecuteNext() {
 	}
 }
 
-// ---- Funciones auxiliares para operaciones aritméticas ----
-func toFloat(val interface{}) float64 {
+// -------------------------------------------- FUN --------------------------------------------
+
+// ToFloat: Convierte int o float a float64
+func ToFloat(val interface{}) float64 {
 	switch v := val.(type) {
 	case int:
 		return float64(v)
@@ -299,39 +315,43 @@ func toFloat(val interface{}) float64 {
 	}
 }
 
-func add(a, b interface{}) interface{} {
+// Add: Realiza operación suma
+func Add(a, b interface{}) interface{} {
 	// Si al menos uno es float, convertir ambos
 	if _, isFloatA := a.(float64); isFloatA {
-		return toFloat(a) + toFloat(b)
+		return ToFloat(a) + ToFloat(b)
 	}
 	if _, isFloatB := b.(float64); isFloatB {
-		return toFloat(a) + toFloat(b)
+		return ToFloat(a) + ToFloat(b)
 	}
 	// Ambos son int
 	return a.(int) + b.(int)
 }
 
-func sub(a, b interface{}) interface{} {
+// Sub: Realiza operación resta
+func Sub(a, b interface{}) interface{} {
 	if _, isFloatA := a.(float64); isFloatA {
-		return toFloat(a) - toFloat(b)
+		return ToFloat(a) - ToFloat(b)
 	}
 	if _, isFloatB := b.(float64); isFloatB {
-		return toFloat(a) - toFloat(b)
+		return ToFloat(a) - ToFloat(b)
 	}
 	return a.(int) - b.(int)
 }
 
-func mul(a, b interface{}) interface{} {
+// Mul: Realiza operación multiplicación
+func Mul(a, b interface{}) interface{} {
 	if _, isFloatA := a.(float64); isFloatA {
-		return toFloat(a) * toFloat(b)
+		return ToFloat(a) * ToFloat(b)
 	}
 	if _, isFloatB := b.(float64); isFloatB {
-		return toFloat(a) * toFloat(b)
+		return ToFloat(a) * ToFloat(b)
 	}
 	return a.(int) * b.(int)
 }
 
-func div(a, b interface{}) interface{} {
+// Div: Realiza operación divición
+func Div(a, b interface{}) interface{} {
 	// La división siempre devuelve float
-	return toFloat(a) / toFloat(b)
+	return ToFloat(a) / ToFloat(b)
 }

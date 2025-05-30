@@ -33,7 +33,7 @@ var testDataAccept4 = []*TI4{
 		 ];
 
 		 void printFactorial() [{
-			print("El factorial es:", result);
+			print("El factorial es:", result, "Hola");
 		 }];
 
 		 main {
@@ -44,6 +44,35 @@ var testDataAccept4 = []*TI4{
 		 }
 
 		 end`,
+	},
+	{
+		`program testFibonacci;
+		 var n, resultado: int;
+
+		 void fibonacciIter(num: int)
+		 [
+			var a, b, i, temp: int;
+			{
+				a = 0;
+				b = 1;
+				i = 0;
+				while (i < num) do {
+					temp = b;
+					b = a + b;
+					a = temp;
+					i = i + 1;
+				};
+				resultado = a;
+			}
+		 ];
+
+		 main {
+			n = 10;
+			resultado = 0;
+			fibonacciIter(n);
+			print("Fibonacci de", n, "es", resultado);
+		 }
+	 	 end`,
 	},
 }
 

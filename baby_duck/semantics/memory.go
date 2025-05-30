@@ -11,7 +11,52 @@ var FunctionDirectory = NewDictionary() // Directorio de funciones
 var memory = NewMemoryManager()         // Memoria de direcciones
 var AddressToName = map[int]string{}    // Traducir direcciones a nombre
 
+// Constantes de Operaciones
+const (
+	ASSIGN     = 11000
+	NOTEQUAL   = 11001
+	LESSTHAN   = 11002
+	MORETHAN   = 11003
+	ADD        = 11004
+	REST       = 11005
+	MULTIPLY   = 11006
+	DIVIDE     = 11007
+	FAKEBOTTOM = 11008
+	GOTO       = 11009
+	GOTOF      = 11010
+	ERA        = 11011
+	PARAMETER  = 11012
+	GOSUB      = 11013
+	ENDFUNC    = 11014
+	PRINT      = 11015
+	END        = 11016
+	MAIN       = 11017
+)
+
+// Símbolo
+var FixedAddresses = map[int]string{
+	ASSIGN:     "=",
+	NOTEQUAL:   "!=",
+	LESSTHAN:   "<",
+	MORETHAN:   ">",
+	ADD:        "+",
+	REST:       "-",
+	MULTIPLY:   "*",
+	DIVIDE:     "/",
+	FAKEBOTTOM: "⏊",
+	GOTO:       "GOTO",
+	GOTOF:      "GOTOF",
+	ERA:        "ERA",
+	PARAMETER:  "PARAMETER",
+	GOSUB:      "GOSUB",
+	ENDFUNC:    "ENDFUNC",
+	PRINT:      "PRINT",
+	END:        "END",
+	MAIN:       "MAIN",
+}
+
 // --------------------------------------- DICTIONARY ---------------------------------------
+
 // NewDictionary: Constructor del diccionario
 func NewDictionary() *Dictionary {
 	return &Dictionary{
@@ -44,48 +89,6 @@ func (d *Dictionary) Get(key string) (interface{}, bool) {
 }
 
 // ----------------------------------------- MEMORY -----------------------------------------
-
-const (
-	ASSIGN     = 11000
-	NOTEQUAL   = 11001
-	LESSTHAN   = 11002
-	MORETHAN   = 11003
-	ADD        = 11004
-	REST       = 11005
-	MULTIPLY   = 11006
-	DIVIDE     = 11007
-	FAKEBOTTOM = 11008
-	GOTO       = 11009
-	GOTOF      = 11010
-	ERA        = 11011
-	PARAMETER  = 11012
-	GOSUB      = 11013
-	ENDFUNC    = 11014
-	PRINT      = 11015
-	END        = 11016
-	MAIN       = 11017
-)
-
-var FixedAddresses = map[int]string{
-	ASSIGN:     "=",
-	NOTEQUAL:   "!=",
-	LESSTHAN:   "<",
-	MORETHAN:   ">",
-	ADD:        "+",
-	REST:       "-",
-	MULTIPLY:   "*",
-	DIVIDE:     "/",
-	FAKEBOTTOM: "⏊",
-	GOTO:       "GOTO",
-	GOTOF:      "GOTOF",
-	ERA:        "ERA",
-	PARAMETER:  "PARAMETER",
-	GOSUB:      "GOSUB",
-	ENDFUNC:    "ENDFUNC",
-	PRINT:      "PRINT",
-	END:        "END",
-	MAIN:       "MAIN",
-}
 
 // NewMemorySegment: El siguiente espacio disponible
 func NewMemorySegment(start, end int) MemorySegment {
@@ -172,7 +175,7 @@ func GetConstAddress(literal string, tipo string) int {
 func PrintAddressTable() {
 	fmt.Println("\n==== Tabla de direcciones virtuales ====")
 
-	// First print variables from scopes
+	// Variables de Scope
 	fmt.Println("\n---- Variables Globales ----")
 	PrintScopeVariables(Scopes.global)
 
@@ -181,7 +184,7 @@ func PrintAddressTable() {
 		PrintScopeVariables(Scopes.current)
 	}
 
-	// Then print constants
+	// Constantes
 	fmt.Println("\n---- Constantes ----")
 	for addr, name := range AddressToName {
 		if strings.HasPrefix(name, "const_") && (addr < 1000 || addr >= 7000) {
@@ -189,7 +192,7 @@ func PrintAddressTable() {
 		}
 	}
 
-	// Then print temporaries
+	// Temporales
 	fmt.Println("\n---- Temporales ----")
 	for addr, name := range AddressToName {
 		if strings.HasPrefix(name, "temp_") {

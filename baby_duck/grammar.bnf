@@ -119,12 +119,18 @@ VarDecl
 IdList
     : id IdListTail
     <<
-        func() (Attrib, error) {
+        func() (Attrib, error) { 
             if token, ok := $0.(*token.Token); ok {
+                // Convierte el literal del token a string y se guarda en una lista
                 idList := []string{string(token.Lit)}
+                
+                // Si hay mas identificadores....
                 if $1 != nil {
+                    // Agregan a la lista
                     idList = append(idList, $1.([]string)...)
                 }
+
+                // Regresa la lista
                 return idList, nil
             } else {
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $0)
@@ -139,11 +145,14 @@ IdListTail
         func() (Attrib, error) {
             if token, ok := $1.(*token.Token); ok {
                 ids := []string{string(token.Lit)}
+
+                // Agrega mas a la lista
                 if $2 != nil {
                     ids = append(ids, $2.([]string)...)
                 }
                 return ids, nil
             } else {
+                // O la regresa vacia (ya no le sigue mas)
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", $1)
             }
         }()
@@ -168,7 +177,7 @@ FunctionHeader
 
 FunctionHeaderTwo
   : FunctionHeader Vars
-  << semantics.HandleFunctionHeaderTwo($0) >>
+    << semantics.HandleFunctionHeaderTwo($0) >>
   ;
 
 Function
@@ -202,11 +211,16 @@ ParamList
   : id colon Type ParamListTail
     <<
       func() (Attrib, error) {
+        // Crea el parametro con nombre y tipo
         param, err := semantics.HandleParam($0, $2)
         if err != nil {
             return nil, err
         }
+
+        // Obtiene los otros parametros de tail
         tail, _ := $3.([]semantics.VariableStructure)
+
+        // Regresa lista actual + tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }()
     >>
@@ -216,11 +230,16 @@ ParamListTail
   : comma id colon Type ParamListTail
     <<
       func() (Attrib, error) {
+        // Crea parametro con nombre y tipo
         param, err := semantics.HandleParam($1, $3)
         if err != nil {
             return nil, err
         }
+
+        // Obtiene tail
         tail, _ := $4.([]semantics.VariableStructure)
+
+        // Regresa parametro con resto del tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }()
     >>
@@ -254,11 +273,15 @@ Assign
       func() (Attrib, error) {
         tokenID := $0.(*token.Token)
         name := string(tokenID.Lit)
-        // Verificar si la variable está declarada
+        
+        // Verifica si la variable está declarada
         if _, exists := semantics.Scopes.Current().Get(name); !exists {
             return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Si pasa verifivación se hace la asignación
         semantics.HandleAssign($0) 
+
         return nil, nil
       }()
     >>
@@ -348,6 +371,12 @@ CycleTail
 /* PRINT */
 Print
     : print l_round_par PrintList r_round_par semicolon
+    <<
+      func() (Attrib, error) {
+          semantics.FinalizePrint()
+          return nil, nil
+      }()
+    >>
     ;
 
 PrintList
@@ -521,9 +550,13 @@ Factor
         cteToken := $0.(*token.Token)
         value := string(cteToken.Lit)
         tipo := "int"
+
+        // Si tiene punto es un float
         if strings.Contains(value, ".") {
           tipo = "float"
         }
+
+        // Agrega a pila operandos
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -533,12 +566,16 @@ Factor
     <<
       func() (Attrib, error) {
         name := string($0.(*token.Token).Lit)
+
+        // Busca si la variable existe en scope actual
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
         vs := raw.(semantics.VariableStructure)
+
+        // Agrega a pila operandos con su dirección
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
         return $0, nil
@@ -584,15 +621,22 @@ FEra
         if !ok {
             return nil, fmt.Errorf("internal error: expected token for function name")
         }
+
+        // Buscar si existe el nombre de la función
         name := string(token.Lit)
         raw, exists := semantics.FunctionDirectory.Get(name)
         if !exists {
             return nil, fmt.Errorf("error: función '%s' no declarada", name)
         }
+
+        // Verifica que sea una estructura de función válida
         if _, ok := raw.(semantics.FunctionStructure); !ok {
             return nil, fmt.Errorf("internal error: entry for function '%s' is not a FunctionStructure", name)
         }
+
+        // Genera ERA
         semantics.HandleFEra($0)
+
         return $0, nil
       }()
     >>
@@ -604,13 +648,16 @@ FCall
       func() (Attrib, error) {
         fnTok := $0.(*token.Token)
         name := string(fnTok.Lit)
+
+        // Obtiene definición de la función
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // Datos parametros
         n := len(fs.Parameters)
         args, _ := $2.([]Attrib)
         
-        // 1. Verificar aridad usando las pilas
+        // Verifica aridad usando las pilas
         if len(args) != n {
             return nil, fmt.Errorf(
                 "error: función '%s' espera %d argumentos, recibió %d",
@@ -618,13 +665,13 @@ FCall
             )
         }
 
-        // Sacar argumentos de las pilas (en orden inverso)
+        // Saca argumentos de las pilas (en orden inverso -> derecha a izquierda)
         for i := n - 1; i >= 0; i-- {
-            addr, _ := semantics.PilaO.Pop()
-            tipoRaw, _ := semantics.PTypes.Pop()
+            addr, _ := semantics.PilaO.Pop()       // Direccion
+            tipoRaw, _ := semantics.PTypes.Pop()   // Tipo
             tipo, _ := tipoRaw.(string)
             
-            // Verificar tipo
+            // Verifica tipo
             expectedType := fs.Parameters[i].Type
             if tipo != expectedType {
                 return nil, fmt.Errorf(
@@ -633,13 +680,11 @@ FCall
                 )
             }
             
-            // Generar PARAMETER con índice (i+1)
+            // Genera PARAMETER con índice (i+1)
             semantics.PushQuad(semantics.PARAMETER, addr, "_", i+1)
-
-            fmt.Println(addr, i+1)
         }
 
-        // 4. Generar GOSUB
+        // Genera GOSUB
         semantics.PushQuad(semantics.GOSUB, name, "_", fs.StartQuad)
 
         return $0, nil
@@ -647,13 +692,14 @@ FCall
     >>
   ;
 
-/* FCallList: siempre devuelve un []Attrib (nunca nil) */
 FCallList
     : Expression FCallListTail
       <<
         func() (Attrib, error) {
           first := $0.(Attrib)
           tail, _ := $1.([]Attrib)
+
+          // Regresa primer argumento con su lista acomulada de tail
           return append([]Attrib{first}, tail...), nil
         }()
       >>
@@ -661,12 +707,10 @@ FCallList
       << []Attrib{}, nil >>
     ;
 
-/* FCallListTail: cola para concatenar más argumentos */
 FCallListTail
     : comma Expression FCallListTail
       <<
         func() (Attrib, error) {
-          //fmt.Printf("→ DEBUG FCallListTail: $1=%T (%v), $2=%T (%v)\n", $1, $1, $2, $2)
           if $1 == nil {
             return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
           }
@@ -680,6 +724,7 @@ FCallListTail
             more = []Attrib{}
           }
 
+          // Regresa argumentos de la cola
           return append([]Attrib{arg}, more...), nil
         }()
       >>

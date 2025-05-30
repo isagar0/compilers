@@ -3,7 +3,6 @@ package semantics
 import "fmt"
 
 // Define las reglas de tipos del lenguaje
-// Si una operación no está permitida, marca error
 var cube = SemanticCube{
 	"int": {
 		"int": {

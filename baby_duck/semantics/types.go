@@ -32,7 +32,14 @@ type FunctionStructure struct {
 	TempCount     int                 // Temporales Usados
 }
 
+// FuncInfo: Helper para pasar nombre+params
+type FuncInfo struct {
+	Name   string
+	Params []VariableStructure
+}
+
 // ------------------------------------------ QUADS ------------------------------------------
+
 // Stack: Last In, Firsst Out
 type Stack struct {
 	items []interface{}
@@ -75,8 +82,21 @@ type MemoryManager struct {
 	Constant SegmentGroup
 }
 
-// Helper para pasar nombre+params
-type FuncInfo struct {
-	Name   string
-	Params []VariableStructure
+// ------------------------------------------ VM ------------------------------------------
+
+// ActivationRecord: Contexto de una función llamadora
+type ActivationRecord struct {
+	ReturnIP int                 // Direccion de instruccion (IP) a la que debe regresar
+	LocalMem map[int]interface{} // Memoria local funcion llamadora
+}
+
+// VirtualMachine: Nucelo de la VM
+type VirtualMachine struct {
+	Quads        []QuadStructure              // Lista de cuadruplos a ejecutar
+	GlobalMemory map[int]interface{}          // Memoria global (variables + constantes)
+	LocalMemory  map[int]interface{}          // Memoria local (función actual)
+	IP           int                          // Pointer (índice actual)
+	CallStack    []ActivationRecord           // Pila de llamadas (para las funciones)
+	FuncDir      map[string]FunctionStructure // Directorio de funciones
+	PendingAR    map[int]interface{}          // Registro de activación pendiente (para ERA)
 }

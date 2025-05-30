@@ -8,17 +8,17 @@ import (
 // --------------------------------------- DECLARACION ---------------------------------------
 
 var (
-	PilaO   = NewStack()    // Operandos
-	PTypes  = NewStack()    // Tipos de operadores
-	POper   = NewStack()    // Operadores
-	Quads   []QuadStructure // Cuádruplos generados
+	PilaO   = NewStack()    // Operandos (variables, constantes, temporales)
+	PTypes  = NewStack()    // Tipos de operadores (int, float, bool)
+	POper   = NewStack()    // Operadores (+, *, <...)
+	Quads   []QuadStructure // Cuádruplos generados (+, x, 5, t1)
 	TempVar int             // Contador para nombres de variables temporales
 	PJumps  = NewStack()    // Stack para saltos pendientes
 )
 
 // ------------------------------------------ STACK ------------------------------------------
 
-// NewStack: Crea una nueva pila vacía.
+// NewStack: Crea una nueva pila vacía (capacidad 16)
 func NewStack() *Stack {
 	return &Stack{
 		items: make([]interface{}, 0, 16),
@@ -54,20 +54,22 @@ func (s *Stack) Peek() (interface{}, error) {
 }
 
 // ------------------------------------------ QUADS ------------------------------------------
-// PushOperandDebug: Push con debug
+// PushOperandDebug: Push con preparación
 func PushOperandDebug(value interface{}, tipo string) {
-	var address int
+	var address int // Declara para asignar despues
 
-	// ¿Es una constante?
+	// Si es constante
 	if tipo == "int" || tipo == "float" || tipo == "bool" || tipo == "string" {
 		constID := fmt.Sprintf("%v", value)
-		// Skip if this looks like a variable address
+		// Si ya tiene direccion asignada usarla
 		if num, err := strconv.Atoi(constID); err == nil && num >= 1000 && num <= 6999 {
-			address = num // Use as direct address
+			address = num
 		} else {
+			// Sino, obtener direccion
 			address = GetConstAddress(constID, tipo)
 		}
-		// Only register as const if not in variable range
+
+		// Registra como constante si ya no hay direcciones disponibles
 		if address < 1000 || address >= 7000 {
 			AddressToName[address] = fmt.Sprintf("const_%s", constID)
 		}
@@ -124,7 +126,7 @@ func ProcessOperation(validOps []int, stopOnFakeBottom bool) error {
 			break
 		}
 
-		// Lógica común de procesamiento
+		// Lógica de procesamiento
 		POper.Pop()
 		rightOp, _ := PilaO.Pop()
 		rightType, _ := PTypes.Pop()
@@ -137,11 +139,13 @@ func ProcessOperation(validOps []int, stopOnFakeBottom bool) error {
 			return fmt.Errorf("error: tipos no son string: left=%T, right=%T", leftType, rightType)
 		}
 
+		// Determina tipo resultante con semantic_cube
 		resType, err := GetResultType(ltype, rtype, FixedAddresses[op])
 		if err != nil {
 			return err
 		}
 
+		// Asignar direccion memoria temporal
 		var tempAddr int
 		switch resType {
 		case "int":
@@ -157,6 +161,7 @@ func ProcessOperation(validOps []int, stopOnFakeBottom bool) error {
 
 		AddressToName[tempAddr] = fmt.Sprintf("temp_%d", tempAddr)
 
+		// Hace el quad
 		PushQuad(op, leftOp, rightOp, tempAddr)
 		PilaO.Push(tempAddr)
 		PTypes.Push(resType)
@@ -187,6 +192,11 @@ func PopUntilFakeBottom() error {
 	return ProcessOperation([]int{ADD, REST, MULTIPLY, DIVIDE}, true)
 }
 
+// GetCurrentQuad: Obtiene el índice del último cuadruplo generado
+func GetCurrentQuad() int {
+	return len(Quads) - 1
+}
+
 // PrintStacks: Imprime las pilas actuales
 func PrintStacks() {
 	fmt.Println("\nOperandos:", PilaO.items)
@@ -204,11 +214,6 @@ func PrintQuads() {
 	for i, q := range Quads {
 		fmt.Printf("%d: (%d %v %v %v)\n", i, q.Oper, q.Left, q.Right, q.Result)
 	}
-}
-
-// GetCurrentQuad: Obtiene el índice del último cuadruplo generado
-func GetCurrentQuad() int {
-	return len(Quads) - 1
 }
 
 // ResetStacks: Limpia todas las variables de los quads

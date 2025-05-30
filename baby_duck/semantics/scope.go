@@ -1,6 +1,6 @@
 package semantics
 
-// scopes: Instancia global
+// Scopes: Instancia global
 var Scopes = &ScopeManager{
 	global:  NewDictionary(),
 	current: nil,
@@ -16,15 +16,15 @@ func NewScopeManager() *ScopeManager {
 
 // EnterScope: Crea un nuevo scope y lo establece como actual
 func (s *ScopeManager) EnterScope() {
-	newScope := NewDictionary()
-	newScope.parent = s.current // Enlaza al scope anterior
-	s.current = newScope
+	newScope := NewDictionary() // Crea diccionario
+	newScope.parent = s.current // Enlaza al scope anterior (padre)
+	s.current = newScope        // Actualiza actual
 }
 
 // ExitScope: Regresa al scope padre
 func (s *ScopeManager) ExitScope() {
 	if s.current != nil {
-		s.current = s.current.parent
+		s.current = s.current.parent // Regresa al padre
 	}
 }
 

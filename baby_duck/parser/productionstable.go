@@ -73,7 +73,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `PTail : Body end	<< func() (Attrib, error) {
         // 2) Generar ENDFUNC
-        semantics.PushQuad("END", "_", "_", "_")
+        semantics.PushQuad(semantics.END, "_", "_", "_")
 
         return nil, nil
       }() >>`,
@@ -84,7 +84,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
         // 2) Generar ENDFUNC
-        semantics.PushQuad("END", "_", "_", "_")
+        semantics.PushQuad(semantics.END, "_", "_", "_")
 
         return nil, nil
       }()
@@ -147,12 +147,18 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `IdList : id IdListTail	<< func() (Attrib, error) {
+		String: `IdList : id IdListTail	<< func() (Attrib, error) { 
             if token, ok := X[0].(*token.Token); ok {
+                // Convierte el literal del token a string y se guarda en una lista
                 idList := []string{string(token.Lit)}
+                
+                // Si hay mas identificadores....
                 if X[1] != nil {
+                    // Agregan a la lista
                     idList = append(idList, X[1].([]string)...)
                 }
+
+                // Regresa la lista
                 return idList, nil
             } else {
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[0])
@@ -163,12 +169,18 @@ var productionsTable = ProdTab{
 		Index:      10,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return func() (Attrib, error) {
+			return func() (Attrib, error) { 
             if token, ok := X[0].(*token.Token); ok {
+                // Convierte el literal del token a string y se guarda en una lista
                 idList := []string{string(token.Lit)}
+                
+                // Si hay mas identificadores....
                 if X[1] != nil {
+                    // Agregan a la lista
                     idList = append(idList, X[1].([]string)...)
                 }
+
+                // Regresa la lista
                 return idList, nil
             } else {
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[0])
@@ -180,11 +192,14 @@ var productionsTable = ProdTab{
 		String: `IdListTail : comma id IdListTail	<< func() (Attrib, error) {
             if token, ok := X[1].(*token.Token); ok {
                 ids := []string{string(token.Lit)}
+
+                // Agrega mas a la lista
                 if X[2] != nil {
                     ids = append(ids, X[2].([]string)...)
                 }
                 return ids, nil
             } else {
+                // O la regresa vacia (ya no le sigue mas)
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
             }
         }() >>`,
@@ -196,11 +211,14 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
             if token, ok := X[1].(*token.Token); ok {
                 ids := []string{string(token.Lit)}
+
+                // Agrega mas a la lista
                 if X[2] != nil {
                     ids = append(ids, X[2].([]string)...)
                 }
                 return ids, nil
             } else {
+                // O la regresa vacia (ya no le sigue mas)
                 return nil, fmt.Errorf("esperaba un token, pero se encontró: %T", X[1])
             }
         }()
@@ -308,11 +326,16 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `ParamList : id colon Type ParamListTail	<< func() (Attrib, error) {
+        // Crea el parametro con nombre y tipo
         param, err := semantics.HandleParam(X[0], X[2])
         if err != nil {
             return nil, err
         }
+
+        // Obtiene los otros parametros de tail
         tail, _ := X[3].([]semantics.VariableStructure)
+
+        // Regresa lista actual + tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }() >>`,
 		Id:         "ParamList",
@@ -321,22 +344,32 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
+        // Crea el parametro con nombre y tipo
         param, err := semantics.HandleParam(X[0], X[2])
         if err != nil {
             return nil, err
         }
+
+        // Obtiene los otros parametros de tail
         tail, _ := X[3].([]semantics.VariableStructure)
+
+        // Regresa lista actual + tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }()
 		},
 	},
 	ProdTabEntry{
 		String: `ParamListTail : comma id colon Type ParamListTail	<< func() (Attrib, error) {
+        // Crea parametro con nombre y tipo
         param, err := semantics.HandleParam(X[1], X[3])
         if err != nil {
             return nil, err
         }
+
+        // Obtiene tail
         tail, _ := X[4].([]semantics.VariableStructure)
+
+        // Regresa parametro con resto del tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }() >>`,
 		Id:         "ParamListTail",
@@ -345,11 +378,16 @@ var productionsTable = ProdTab{
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
+        // Crea parametro con nombre y tipo
         param, err := semantics.HandleParam(X[1], X[3])
         if err != nil {
             return nil, err
         }
+
+        // Obtiene tail
         tail, _ := X[4].([]semantics.VariableStructure)
+
+        // Regresa parametro con resto del tail
         return append([]semantics.VariableStructure{param}, tail...), nil
       }()
 		},
@@ -448,11 +486,15 @@ var productionsTable = ProdTab{
 		String: `Assign : id assign Expression semicolon	<< func() (Attrib, error) {
         tokenID := X[0].(*token.Token)
         name := string(tokenID.Lit)
-        // Verificar si la variable está declarada
+        
+        // Verifica si la variable está declarada
         if _, exists := semantics.Scopes.Current().Get(name); !exists {
             return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Si pasa verifivación se hace la asignación
         semantics.HandleAssign(X[0]) 
+
         return nil, nil
       }() >>`,
 		Id:         "Assign",
@@ -463,11 +505,15 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
         tokenID := X[0].(*token.Token)
         name := string(tokenID.Lit)
-        // Verificar si la variable está declarada
+        
+        // Verifica si la variable está declarada
         if _, exists := semantics.Scopes.Current().Get(name); !exists {
             return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
+
+        // Si pasa verifivación se hace la asignación
         semantics.HandleAssign(X[0]) 
+
         return nil, nil
       }()
 		},
@@ -607,13 +653,19 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Print : print l_round_par PrintList r_round_par semicolon	<<  >>`,
+		String: `Print : print l_round_par PrintList r_round_par semicolon	<< func() (Attrib, error) {
+          semantics.FinalizePrint()
+          return nil, nil
+      }() >>`,
 		Id:         "Print",
 		NTType:     29,
 		Index:      41,
 		NumSymbols: 5,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return X[0], nil
+			return func() (Attrib, error) {
+          semantics.FinalizePrint()
+          return nil, nil
+      }()
 		},
 	},
 	ProdTabEntry{
@@ -728,7 +780,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `Operator : less_than	<< func() (Attrib, error) {
-          semantics.PushOp(">")
+          semantics.PushOp(semantics.MORETHAN)
           return nil, nil
         }() >>`,
 		Id:         "Operator",
@@ -737,14 +789,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          semantics.PushOp(">")
+          semantics.PushOp(semantics.MORETHAN)
           return nil, nil
         }()
 		},
 	},
 	ProdTabEntry{
 		String: `Operator : more_than	<< func() (Attrib, error) {
-          semantics.PushOp("<")
+          semantics.PushOp(semantics.LESSTHAN)
           return nil, nil
         }() >>`,
 		Id:         "Operator",
@@ -753,14 +805,14 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          semantics.PushOp("<")
+          semantics.PushOp(semantics.LESSTHAN)
           return nil, nil
         }()
 		},
 	},
 	ProdTabEntry{
 		String: `Operator : not_equal	<< func() (Attrib, error) {
-          semantics.PushOp("!=")
+          semantics.PushOp(semantics.NOTEQUAL)
           return nil, nil
         }() >>`,
 		Id:         "Operator",
@@ -769,7 +821,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          semantics.PushOp("!=")
+          semantics.PushOp(semantics.NOTEQUAL)
           return nil, nil
         }()
 		},
@@ -819,7 +871,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `OperatorAdd : add	<< func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("+")
+          semantics.PushOp(semantics.ADD)
           return nil, nil
         }() >>`,
 		Id:         "OperatorAdd",
@@ -829,7 +881,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("+")
+          semantics.PushOp(semantics.ADD)
           return nil, nil
         }()
 		},
@@ -837,7 +889,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `OperatorAdd : rest	<< func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("-")
+          semantics.PushOp(semantics.REST)
           return nil, nil
         }() >>`,
 		Id:         "OperatorAdd",
@@ -847,7 +899,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("-")
+          semantics.PushOp(semantics.REST)
           return nil, nil
         }()
 		},
@@ -897,7 +949,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `OperatorMul : multiply	<< func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("*")
+          semantics.PushOp(semantics.MULTIPLY)
           return nil, nil
         }() >>`,
 		Id:         "OperatorMul",
@@ -907,7 +959,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("*")
+          semantics.PushOp(semantics.MULTIPLY)
           return nil, nil
         }()
 		},
@@ -915,7 +967,7 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `OperatorMul : divide	<< func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("/")
+          semantics.PushOp(semantics.DIVIDE)
           return nil, nil
         }() >>`,
 		Id:         "OperatorMul",
@@ -925,7 +977,7 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("/")
+          semantics.PushOp(semantics.DIVIDE)
           return nil, nil
         }()
 		},
@@ -945,9 +997,13 @@ var productionsTable = ProdTab{
         cteToken := X[0].(*token.Token)
         value := string(cteToken.Lit)
         tipo := "int"
+
+        // Si tiene punto es un float
         if strings.Contains(value, ".") {
           tipo = "float"
         }
+
+        // Agrega a pila operandos
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -961,9 +1017,13 @@ var productionsTable = ProdTab{
         cteToken := X[0].(*token.Token)
         value := string(cteToken.Lit)
         tipo := "int"
+
+        // Si tiene punto es un float
         if strings.Contains(value, ".") {
           tipo = "float"
         }
+
+        // Agrega a pila operandos
         semantics.PushOperandDebug(value, tipo)
 
         return cteToken, nil
@@ -973,12 +1033,16 @@ var productionsTable = ProdTab{
 	ProdTabEntry{
 		String: `Factor : id	<< func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
+
+        // Busca si la variable existe en scope actual
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
         vs := raw.(semantics.VariableStructure)
+
+        // Agrega a pila operandos con su dirección
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
         return X[0], nil
@@ -990,12 +1054,16 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
         name := string(X[0].(*token.Token).Lit)
+
+        // Busca si la variable existe en scope actual
         raw, exists := semantics.Scopes.Current().Get(name)
         if !exists {
           return nil, fmt.Errorf("error: variable '%s' no declarada", name)
         }
 
         vs := raw.(semantics.VariableStructure)
+
+        // Agrega a pila operandos con su dirección
         semantics.PushOperandDebug(vs.Address, vs.Type)
 
         return X[0], nil
@@ -1024,7 +1092,7 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FakeBottom : l_round_par	<< func() (Attrib, error) {
-        semantics.PushOp("⏊")
+        semantics.PushOp(semantics.FAKEBOTTOM)
         return nil, nil
       }() >>`,
 		Id:         "FakeBottom",
@@ -1033,7 +1101,7 @@ var productionsTable = ProdTab{
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-        semantics.PushOp("⏊")
+        semantics.PushOp(semantics.FAKEBOTTOM)
         return nil, nil
       }()
 		},
@@ -1080,15 +1148,22 @@ var productionsTable = ProdTab{
         if !ok {
             return nil, fmt.Errorf("internal error: expected token for function name")
         }
+
+        // Buscar si existe el nombre de la función
         name := string(token.Lit)
         raw, exists := semantics.FunctionDirectory.Get(name)
         if !exists {
             return nil, fmt.Errorf("error: función '%s' no declarada", name)
         }
+
+        // Verifica que sea una estructura de función válida
         if _, ok := raw.(semantics.FunctionStructure); !ok {
             return nil, fmt.Errorf("internal error: entry for function '%s' is not a FunctionStructure", name)
         }
+
+        // Genera ERA
         semantics.HandleFEra(X[0])
+
         return X[0], nil
       }() >>`,
 		Id:         "FEra",
@@ -1101,15 +1176,22 @@ var productionsTable = ProdTab{
         if !ok {
             return nil, fmt.Errorf("internal error: expected token for function name")
         }
+
+        // Buscar si existe el nombre de la función
         name := string(token.Lit)
         raw, exists := semantics.FunctionDirectory.Get(name)
         if !exists {
             return nil, fmt.Errorf("error: función '%s' no declarada", name)
         }
+
+        // Verifica que sea una estructura de función válida
         if _, ok := raw.(semantics.FunctionStructure); !ok {
             return nil, fmt.Errorf("internal error: entry for function '%s' is not a FunctionStructure", name)
         }
+
+        // Genera ERA
         semantics.HandleFEra(X[0])
+
         return X[0], nil
       }()
 		},
@@ -1118,13 +1200,16 @@ var productionsTable = ProdTab{
 		String: `FCall : FEra l_round_par FCallList r_round_par semicolon	<< func() (Attrib, error) {
         fnTok := X[0].(*token.Token)
         name := string(fnTok.Lit)
+
+        // Obtiene definición de la función
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // Datos parametros
         n := len(fs.Parameters)
         args, _ := X[2].([]Attrib)
         
-        // 1. Verificar aridad usando las pilas
+        // Verifica aridad usando las pilas
         if len(args) != n {
             return nil, fmt.Errorf(
                 "error: función '%s' espera %d argumentos, recibió %d",
@@ -1132,13 +1217,13 @@ var productionsTable = ProdTab{
             )
         }
 
-        // Sacar argumentos de las pilas (en orden inverso)
+        // Saca argumentos de las pilas (en orden inverso -> derecha a izquierda)
         for i := n - 1; i >= 0; i-- {
-            addr, _ := semantics.PilaO.Pop()
-            tipoRaw, _ := semantics.PTypes.Pop()
+            addr, _ := semantics.PilaO.Pop()       // Direccion
+            tipoRaw, _ := semantics.PTypes.Pop()   // Tipo
             tipo, _ := tipoRaw.(string)
             
-            // Verificar tipo
+            // Verifica tipo
             expectedType := fs.Parameters[i].Type
             if tipo != expectedType {
                 return nil, fmt.Errorf(
@@ -1147,14 +1232,12 @@ var productionsTable = ProdTab{
                 )
             }
             
-            // Generar PARAMETER con índice (i+1)
-            semantics.PushQuad("PARAMETER", addr, "_", i+1)
-
-            fmt.Println(addr, i+1)
+            // Genera PARAMETER con índice (i+1)
+            semantics.PushQuad(semantics.PARAMETER, addr, "_", i+1)
         }
 
-        // 4. Generar GOSUB
-        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
+        // Genera GOSUB
+        semantics.PushQuad(semantics.GOSUB, name, "_", fs.StartQuad)
 
         return X[0], nil
       }() >>`,
@@ -1166,13 +1249,16 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
         fnTok := X[0].(*token.Token)
         name := string(fnTok.Lit)
+
+        // Obtiene definición de la función
         raw, _ := semantics.FunctionDirectory.Get(name)
         fs := raw.(semantics.FunctionStructure)
 
+        // Datos parametros
         n := len(fs.Parameters)
         args, _ := X[2].([]Attrib)
         
-        // 1. Verificar aridad usando las pilas
+        // Verifica aridad usando las pilas
         if len(args) != n {
             return nil, fmt.Errorf(
                 "error: función '%s' espera %d argumentos, recibió %d",
@@ -1180,13 +1266,13 @@ var productionsTable = ProdTab{
             )
         }
 
-        // Sacar argumentos de las pilas (en orden inverso)
+        // Saca argumentos de las pilas (en orden inverso -> derecha a izquierda)
         for i := n - 1; i >= 0; i-- {
-            addr, _ := semantics.PilaO.Pop()
-            tipoRaw, _ := semantics.PTypes.Pop()
+            addr, _ := semantics.PilaO.Pop()       // Direccion
+            tipoRaw, _ := semantics.PTypes.Pop()   // Tipo
             tipo, _ := tipoRaw.(string)
             
-            // Verificar tipo
+            // Verifica tipo
             expectedType := fs.Parameters[i].Type
             if tipo != expectedType {
                 return nil, fmt.Errorf(
@@ -1195,14 +1281,12 @@ var productionsTable = ProdTab{
                 )
             }
             
-            // Generar PARAMETER con índice (i+1)
-            semantics.PushQuad("PARAMETER", addr, "_", i+1)
-
-            fmt.Println(addr, i+1)
+            // Genera PARAMETER con índice (i+1)
+            semantics.PushQuad(semantics.PARAMETER, addr, "_", i+1)
         }
 
-        // 4. Generar GOSUB
-        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
+        // Genera GOSUB
+        semantics.PushQuad(semantics.GOSUB, name, "_", fs.StartQuad)
 
         return X[0], nil
       }()
@@ -1212,6 +1296,8 @@ var productionsTable = ProdTab{
 		String: `FCallList : Expression FCallListTail	<< func() (Attrib, error) {
           first := X[0].(Attrib)
           tail, _ := X[1].([]Attrib)
+
+          // Regresa primer argumento con su lista acomulada de tail
           return append([]Attrib{first}, tail...), nil
         }() >>`,
 		Id:         "FCallList",
@@ -1222,6 +1308,8 @@ var productionsTable = ProdTab{
 			return func() (Attrib, error) {
           first := X[0].(Attrib)
           tail, _ := X[1].([]Attrib)
+
+          // Regresa primer argumento con su lista acomulada de tail
           return append([]Attrib{first}, tail...), nil
         }()
 		},
@@ -1238,7 +1326,6 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `FCallListTail : comma Expression FCallListTail	<< func() (Attrib, error) {
-          //fmt.Printf("→ DEBUG FCallListTail: X[1]=%T (%v), X[2]=%T (%v)\n", X[1], X[1], X[2], X[2])
           if X[1] == nil {
             return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
           }
@@ -1252,6 +1339,7 @@ var productionsTable = ProdTab{
             more = []Attrib{}
           }
 
+          // Regresa argumentos de la cola
           return append([]Attrib{arg}, more...), nil
         }() >>`,
 		Id:         "FCallListTail",
@@ -1260,7 +1348,6 @@ var productionsTable = ProdTab{
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return func() (Attrib, error) {
-          //fmt.Printf("→ DEBUG FCallListTail: X[1]=%T (%v), X[2]=%T (%v)\n", X[1], X[1], X[2], X[2])
           if X[1] == nil {
             return nil, fmt.Errorf("FCallListTail error: argumento nulo en expresión")
           }
@@ -1274,6 +1361,7 @@ var productionsTable = ProdTab{
             more = []Attrib{}
           }
 
+          // Regresa argumentos de la cola
           return append([]Attrib{arg}, more...), nil
         }()
 		},
