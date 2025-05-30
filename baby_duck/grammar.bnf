@@ -88,7 +88,7 @@ PTail
   <<
       func() (Attrib, error) {
         // 2) Generar ENDFUNC
-        semantics.PushQuad("END", "_", "_", "_")
+        semantics.PushQuad(semantics.END, "_", "_", "_")
 
         return nil, nil
       }()
@@ -410,21 +410,21 @@ Operator
     : less_than
       <<
         func() (Attrib, error) {
-          semantics.PushOp(">")
+          semantics.PushOp(semantics.MORETHAN)
           return nil, nil
         }()
       >>
     | more_than
       <<
         func() (Attrib, error) {
-          semantics.PushOp("<")
+          semantics.PushOp(semantics.LESSTHAN)
           return nil, nil
         }()
       >>
     | not_equal
       <<
         func() (Attrib, error) {
-          semantics.PushOp("!=")
+          semantics.PushOp(semantics.NOTEQUAL)
           return nil, nil
         }()
       >>
@@ -457,7 +457,7 @@ OperatorAdd
       <<
         func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("+")
+          semantics.PushOp(semantics.ADD)
           return nil, nil
         }()
       >>
@@ -465,7 +465,7 @@ OperatorAdd
       <<
         func() (Attrib, error) {
           semantics.DoAddSub()
-          semantics.PushOp("-")
+          semantics.PushOp(semantics.REST)
           return nil, nil
         }()
       >>
@@ -498,7 +498,7 @@ OperatorMul
       <<
         func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("*")
+          semantics.PushOp(semantics.MULTIPLY)
           return nil, nil
         }()
       >>
@@ -506,7 +506,7 @@ OperatorMul
       <<
         func() (Attrib, error) {
           semantics.DoMulDiv()
-          semantics.PushOp("/")
+          semantics.PushOp(semantics.DIVIDE)
           return nil, nil
         }()
       >>
@@ -552,7 +552,7 @@ FakeBottom
   : l_round_par
     <<
       func() (Attrib, error) {
-        semantics.PushOp("⏊")
+        semantics.PushOp(semantics.FAKEBOTTOM)
         return nil, nil
       }()
     >>
@@ -634,13 +634,13 @@ FCall
             }
             
             // Generar PARAMETER con índice (i+1)
-            semantics.PushQuad("PARAMETER", addr, "_", i+1)
+            semantics.PushQuad(semantics.PARAMETER, addr, "_", i+1)
 
             fmt.Println(addr, i+1)
         }
 
         // 4. Generar GOSUB
-        semantics.PushQuad("GOSUB", name, "_", fs.StartQuad)
+        semantics.PushQuad(semantics.GOSUB, name, "_", fs.StartQuad)
 
         return $0, nil
       }()

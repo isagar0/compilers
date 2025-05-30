@@ -38,7 +38,7 @@ func HandlePHeader(idToken interface{}) (int, error) {
 		return 0, err
 	}
 
-	PushQuad("GOTO", "MAIN", "_", -1)
+	PushQuad(GOTO, MAIN, "_", -1)
 	gotoMainQuad := len(Quads) - 1
 	return gotoMainQuad, nil
 }
@@ -283,7 +283,7 @@ func HandleFEra(idToken interface{}) (interface{}, error) {
 	// 3) Calcular tamaño y generar ERA
 	fs := raw.(FunctionStructure)
 	size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
-	PushQuad("ERA", "_", "_", size)
+	PushQuad(ERA, "_", "_", size)
 
 	return fnTok, nil
 }
@@ -317,7 +317,7 @@ func HandleFunction(funcInfo interface{}) error {
 	TempVar = 0
 
 	// Generar ENDFUNC
-	PushQuad("ENDFUNC", "_", "_", "_")
+	PushQuad(ENDFUNC, "_", "_", "_")
 
 	// Salir del scope local
 	Scopes.ExitScope()
@@ -400,7 +400,7 @@ func HandleAssign(idToken interface{}) error {
 	raw, _ := Scopes.Current().Get(name)
 	vs := raw.(VariableStructure)
 
-	PushQuad("=", rightOp, "_", vs.Address)
+	PushQuad(ASSIGN, rightOp, "_", vs.Address)
 	return nil
 }
 
@@ -414,13 +414,13 @@ func HandleConditionTail() error {
 		return fmt.Errorf("condición debe ser booleana, recibió: %v", condType)
 	}
 
-	PushQuad("GOTOF", condAddr, "_", -1)
+	PushQuad(GOTOF, condAddr, "_", -1)
 	PJumps.Push(len(Quads) - 1)
 	return nil
 }
 
 func HandleElseTail() error {
-	PushQuad("GOTO", "_", "_", -1)
+	PushQuad(GOTO, "_", "_", -1)
 	PJumps.Push(len(Quads) - 1)
 	return nil
 }
@@ -437,7 +437,7 @@ func HandleCycleTail() error {
 	falseJump := falseJumpRaw.(int)
 	returnJump := returnJumpRaw.(int)
 
-	PushQuad("GOTO", "_", "_", returnJump)
+	PushQuad(GOTO, "_", "_", returnJump)
 	Quads[falseJump].Result = len(Quads)
 	return nil
 }
@@ -483,7 +483,7 @@ func HandleCycleExpression() error {
 	}
 
 	// Generar cuadruplo GOTOF (salto si falso) con dirección pendiente
-	PushQuad("GOTOF", condAddr, "_", -1)
+	PushQuad(GOTOF, condAddr, "_", -1)
 
 	// Guardar la posición del cuadruplo para backpatching
 	PJumps.Push(len(Quads) - 1)
@@ -495,7 +495,7 @@ func HandleCycleExpression() error {
 
 func HandlePrintExpression() error {
 	value, _ := PilaO.Pop()
-	PushQuad("PRINT", value, "_", "_")
+	PushQuad(PRINT, value, "_", "_")
 	return nil
 }
 
@@ -503,6 +503,6 @@ func HandlePrintString(strToken interface{}) error {
 	tok := strToken.(*token.Token)
 	str := string(tok.Lit)
 	addr := GetConstAddress(str, "string")
-	PushQuad("PRINT", addr, "_", "_")
+	PushQuad(PRINT, addr, "_", "_")
 	return nil
 }
