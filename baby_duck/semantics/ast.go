@@ -19,6 +19,59 @@ func ResetSemanticState() {
 	ResetMemory()
 }
 
+// -------------------------------------------- PROGRAM --------------------------------------------
+// RegisterMainProgram: Crea el scope global y registra el programa principal
+func RegisterMainProgram(programName string) error {
+	// Verifica si ya existe una entrada con mismo nombre
+	if _, exists := FunctionDirectory.Get(programName); exists {
+		return fmt.Errorf("error: el programa '%s' ya ha sido declarado", programName)
+	}
+
+	return nil
+}
+
+func HandlePHeader(idToken interface{}) (int, error) {
+	token := idToken.(*token.Token)
+	name := string(token.Lit)
+
+	if err := RegisterMainProgram(name); err != nil {
+		return 0, err
+	}
+
+	PushQuad("GOTO", "MAIN", "_", -1)
+	gotoMainQuad := len(Quads) - 1
+	return gotoMainQuad, nil
+}
+
+func HandlePBody(gotoMainQuad interface{}) error {
+	// Registrar la función 'main' (si no está registrada)
+	if err := RegisterFunction("main"); err != nil {
+		return err
+	}
+
+	// Convertir el atributo (que es un int) a entero
+	quadIndex, ok := gotoMainQuad.(int)
+	if !ok {
+		return fmt.Errorf("error: se esperaba un índice de cuadruplo (int) para el GOTO a main")
+	}
+
+	// Obtener la entrada de la función main
+	raw, exists := FunctionDirectory.Get("main")
+	if !exists {
+		return fmt.Errorf("error: función 'main' no encontrada en el directorio de funciones")
+	}
+	fsMain := raw.(FunctionStructure)
+	startMain := fsMain.StartQuad
+
+	// Actualizar el cuadruplo GOTO con la dirección de inicio de main
+	if quadIndex < 0 || quadIndex >= len(Quads) {
+		return fmt.Errorf("error: índice de cuadruplo GOTO a main (%d) fuera de rango", quadIndex)
+	}
+	Quads[quadIndex].Result = startMain
+
+	return nil
+}
+
 // -------------------------------------------- VARS --------------------------------------------
 // Reset: Crea una nuvea tabla global y sus scopes vacios
 func ResetVars() {
@@ -27,28 +80,6 @@ func ResetVars() {
 		global:  global,
 		current: global, // Ahora current apunta a global inicialmente
 	}
-}
-
-// RegisterMainProgram: Crea el scope global y registra el programa principal
-func RegisterMainProgram(programName string) error {
-	// Verifica si ya existe una entrada con mismo nombre
-	if _, exists := FunctionDirectory.Get(programName); exists {
-		return fmt.Errorf("error: el programa '%s' ya ha sido declarado", programName)
-	}
-
-	/*
-		// Registra el programa principal como una función sin parámetros
-		FunctionDirectory.Put(programName, FunctionStructure{
-			Name:       programName,
-			Parameters: []VariableStructure{},
-			VarTable:   Scopes.global,
-			ParamCount: 0,
-			StartQuad:  0,
-		})
-	*/
-
-	//fmt.Printf("Programa principal '%s' registrado exitosamente.\n", programName)
-	return nil
 }
 
 // VarDeclaration: Procesa la declaración de variables en el scope actual
@@ -99,12 +130,6 @@ func VarDeclaration(ids []string, tipo string) error {
 			Address: dir,
 		})
 		AddressToName[dir] = id
-		//fmt.Printf("Declared %s at address %d (type %s)\n", id, dir, tipo)
-		/*scope := "global"
-		if Scopes.Current() != Scopes.global {
-			scope = "local"
-		}
-		fmt.Printf("[DEBUG] Declaradas variables %v en scope %s (tipo %s)\n", ids, scope, tipo)*/
 	}
 
 	/*
@@ -117,12 +142,33 @@ func VarDeclaration(ids []string, tipo string) error {
 	return nil
 }
 
-// Registra el nombre del programa (no es una función)
-func RegisterProgramName(name string) error {
-	// Opcional: Almacenar en una estructura separada si es necesario
-	return nil
+// CountVars: Cuenta variables en el scope actual
+func (d *Dictionary) CountVars() int {
+	count := 0
+	for _, v := range d.Items {
+		if _, ok := v.(VariableStructure); ok {
+			count++
+		}
+	}
+	return count
 }
 
+func HandleVarDecl(ids interface{}, typeToken interface{}) error {
+	idList, ok := ids.([]string)
+	if !ok {
+		return fmt.Errorf("tipo inválido para lista de IDs")
+	}
+
+	tipoToken, ok := typeToken.(*token.Token)
+	if !ok {
+		return fmt.Errorf("tipo inválido para tipo de variable")
+	}
+	tipo := string(tipoToken.Lit)
+
+	return VarDeclaration(idList, tipo)
+}
+
+// -------------------------------------------- FUNCS --------------------------------------------
 // RegisterFunction: Crea la entrada de la función con nombre, retorno void
 func RegisterFunction(name string) error {
 	// Verifica si ya existe una función con el mismo nombre, marca error
@@ -132,9 +178,6 @@ func RegisterFunction(name string) error {
 
 	// Crea una nueva tabla de variables locales para esta función
 	localTable := NewDictionary()
-
-	/*fmt.Printf("[DEBUG] RegisterFunction %s → local scope %p\n",
-	name, localTable)*/
 
 	// Registra la función en el directorio
 	FunctionDirectory.Put(name, FunctionStructure{
@@ -148,26 +191,6 @@ func RegisterFunction(name string) error {
 
 	//fmt.Printf("[DEBUG] RegisterFunction: %d\n", len(Quads))
 
-	return nil
-}
-
-// ValidateParams: Verifica que los parámetros de una función no estén duplicados
-func ValidateParams(params []VariableStructure) error {
-	// Diccionario temporal para llevar el control de nombres ya vistos
-	paramSet := NewDictionary()
-
-	// Recorre cada parametro recibido
-	for _, param := range params {
-		/*
-			// Verifica si el parametro ya fue declarada, marca error
-			if _, exists := paramSet.Get(param.Name); exists {
-				return fmt.Errorf("error: parámetro '%s' duplicado en la función", param.Name)
-			}
-		*/
-
-		// Si no existe, se agrega para futuras comparaciones
-		paramSet.Put(param.Name, param)
-	}
 	return nil
 }
 
@@ -191,13 +214,9 @@ func FuncDeclaration(name string, params []VariableStructure, localVarCount, sta
 	fs.Parameters = params
 	for i, param := range params {
 		// paramName := fmt.Sprintf("param_%d", i)
-		// Get the actual address from the local scope
 		if raw, exists := Scopes.Current().Get(param.Name); exists {
 			vs := raw.(VariableStructure)
-			// Registrar con nombre especial para depuración			/
-			// return fmt.Errorf("parameter %s already exists", param.Name)
 			AddressToName[vs.Address] = fmt.Sprintf("%s_param_%d", name, i+1)
-			// fmt.Printf("Registered param %s → %d (actual address)\n", param.Name, vs.Address)
 		}
 	}
 
@@ -214,73 +233,6 @@ func FuncDeclaration(name string, params []VariableStructure, localVarCount, sta
 	FunctionDirectory.Put(name, fs)
 
 	return nil
-}
-
-// CountVars: Cuenta variables en el scope actual
-func (d *Dictionary) CountVars() int {
-	count := 0
-	for _, v := range d.Items {
-		if _, ok := v.(VariableStructure); ok {
-			count++
-		}
-	}
-	return count
-}
-
-// GetCurrentQuad: Obtiene el índice del último cuadruplo generado
-func GetCurrentQuad() int {
-	return len(Quads) - 1
-}
-
-func AssignAddressToParam(tipo string) (int, error) {
-	switch tipo {
-	case "int":
-		return memory.Local.Ints.GetNext()
-	case "float":
-		return memory.Local.Floats.GetNext()
-	default:
-		return 0, fmt.Errorf("tipo no soportado: %s", tipo)
-	}
-}
-
-func DeclareInCurrentScope(name, tipo string, address int) error {
-	scope := Scopes.Current()
-
-	scope.Put(name, VariableStructure{
-		Name:    name,
-		Type:    tipo,
-		Address: address,
-	})
-	AddressToName[address] = name
-	return nil
-}
-
-func HandlePHeader(idToken interface{}) (int, error) {
-	token := idToken.(*token.Token)
-	name := string(token.Lit)
-
-	if err := RegisterMainProgram(name); err != nil {
-		return 0, err
-	}
-
-	PushQuad("GOTO", "MAIN", "_", -1)
-	gotoMainQuad := len(Quads) - 1
-	return gotoMainQuad, nil
-}
-
-func HandleVarDecl(ids interface{}, typeToken interface{}) error {
-	idList, ok := ids.([]string)
-	if !ok {
-		return fmt.Errorf("tipo inválido para lista de IDs")
-	}
-
-	tipoToken, ok := typeToken.(*token.Token)
-	if !ok {
-		return fmt.Errorf("tipo inválido para tipo de variable")
-	}
-	tipo := string(tipoToken.Lit)
-
-	return VarDeclaration(idList, tipo)
 }
 
 func HandleFunctionHeader(idToken, paramsToken interface{}) (FuncInfo, error) {
@@ -314,6 +266,102 @@ func HandleFunctionHeaderTwo(funcInfo interface{}) (FuncInfo, error) {
 	return info, nil
 }
 
+func HandleFEra(idToken interface{}) (interface{}, error) {
+	// 1) Extraer nombre de la función
+	fnTok, ok := idToken.(*token.Token)
+	if !ok {
+		return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", idToken)
+	}
+	name := string(fnTok.Lit)
+
+	// 2) Comprobar que la función exista
+	raw, exists := FunctionDirectory.Get(name)
+	if !exists {
+		return nil, fmt.Errorf("error: función '%s' no declarada", name)
+	}
+
+	// 3) Calcular tamaño y generar ERA
+	fs := raw.(FunctionStructure)
+	size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
+	PushQuad("ERA", "_", "_", size)
+
+	return fnTok, nil
+}
+
+func HandleFunction(funcInfo interface{}) error {
+	info, ok := funcInfo.(FuncInfo)
+	if !ok {
+		return fmt.Errorf("error interno: información de función inválida")
+	}
+
+	// Obtener el conteo actual de temporales
+	tempCount := TempVar
+
+	// Obtener la entrada de la función
+	raw, exists := FunctionDirectory.Get(info.Name)
+	if !exists {
+		return fmt.Errorf("error: función '%s' no encontrada en el directorio", info.Name)
+	}
+
+	// Verificar y convertir el tipo
+	fs, ok := raw.(FunctionStructure)
+	if !ok {
+		return fmt.Errorf("error interno: entrada para '%s' no es FunctionStructure", info.Name)
+	}
+
+	// Actualizar el conteo de temporales
+	fs.TempCount = tempCount
+	FunctionDirectory.Put(info.Name, fs)
+
+	// Reiniciar contador para la siguiente función
+	TempVar = 0
+
+	// Generar ENDFUNC
+	PushQuad("ENDFUNC", "_", "_", "_")
+
+	// Salir del scope local
+	Scopes.ExitScope()
+
+	return nil
+}
+
+// -------------------------------------------- PARAMS --------------------------------------------
+// ValidateParams: Verifica que los parámetros de una función no estén duplicados
+func ValidateParams(params []VariableStructure) error {
+	// Diccionario temporal para llevar el control de nombres ya vistos
+	paramSet := NewDictionary()
+
+	// Recorre cada parametro recibido
+	for _, param := range params {
+		// Si no existe, se agrega para futuras comparaciones
+		paramSet.Put(param.Name, param)
+	}
+	return nil
+}
+
+func AssignAddressToParam(tipo string) (int, error) {
+	switch tipo {
+	case "int":
+		return memory.Local.Ints.GetNext()
+	case "float":
+		return memory.Local.Floats.GetNext()
+	default:
+		return 0, fmt.Errorf("tipo no soportado: %s", tipo)
+	}
+}
+
+func DeclareInCurrentScope(name, tipo string, address int) error {
+	scope := Scopes.Current()
+
+	scope.Put(name, VariableStructure{
+		Name:    name,
+		Type:    tipo,
+		Address: address,
+	})
+	AddressToName[address] = name
+	return nil
+}
+
 func HandleParam(idToken, typeToken interface{}) (VariableStructure, error) {
 	nameTok, ok := idToken.(*token.Token)
 	if !ok {
@@ -339,6 +387,8 @@ func HandleParam(idToken, typeToken interface{}) (VariableStructure, error) {
 	return VariableStructure{Name: name, Type: tipo, Address: dir}, nil
 }
 
+// -------------------------------------------- ASSIGN --------------------------------------------
+
 func HandleAssign(idToken interface{}) error {
 	name := string(idToken.(*token.Token).Lit)
 
@@ -353,6 +403,8 @@ func HandleAssign(idToken interface{}) error {
 	PushQuad("=", rightOp, "_", vs.Address)
 	return nil
 }
+
+// -------------------------------------------- CONDITIONAL --------------------------------------------
 
 func HandleConditionTail() error {
 	condAddr, _ := PilaO.Pop()
@@ -390,20 +442,6 @@ func HandleCycleTail() error {
 	return nil
 }
 
-func HandlePrintExpression() error {
-	value, _ := PilaO.Pop()
-	PushQuad("PRINT", value, "_", "_")
-	return nil
-}
-
-func HandlePrintString(strToken interface{}) error {
-	tok := strToken.(*token.Token)
-	str := string(tok.Lit)
-	addr := GetConstAddress(str, "string")
-	PushQuad("PRINT", addr, "_", "_")
-	return nil
-}
-
 func HandleCondition(hasElse bool) error {
 	if hasElse {
 		endJumpRaw, _ := PJumps.Pop()
@@ -418,57 +456,6 @@ func HandleCondition(hasElse bool) error {
 		falseJump := falseJumpRaw.(int)
 		Quads[falseJump].Result = len(Quads)
 	}
-	return nil
-}
-
-func HandleFEra(idToken interface{}) (interface{}, error) {
-	// 1) Extraer nombre de la función
-	fnTok, ok := idToken.(*token.Token)
-	if !ok {
-		return nil, fmt.Errorf("esperaba identificador de función, pero fue %T", idToken)
-	}
-	name := string(fnTok.Lit)
-
-	// 2) Comprobar que la función exista
-	raw, exists := FunctionDirectory.Get(name)
-	if !exists {
-		return nil, fmt.Errorf("error: función '%s' no declarada", name)
-	}
-
-	// 3) Calcular tamaño y generar ERA
-	fs := raw.(FunctionStructure)
-	size := fs.LocalVarCount + fs.TempCount + fs.ParamCount
-	PushQuad("ERA", "_", "_", size)
-
-	return fnTok, nil
-}
-
-func HandlePBody(gotoMainQuad interface{}) error {
-	// Registrar la función 'main' (si no está registrada)
-	if err := RegisterFunction("main"); err != nil {
-		return err
-	}
-
-	// Convertir el atributo (que es un int) a entero
-	quadIndex, ok := gotoMainQuad.(int)
-	if !ok {
-		return fmt.Errorf("error: se esperaba un índice de cuadruplo (int) para el GOTO a main")
-	}
-
-	// Obtener la entrada de la función main
-	raw, exists := FunctionDirectory.Get("main")
-	if !exists {
-		return fmt.Errorf("error: función 'main' no encontrada en el directorio de funciones")
-	}
-	fsMain := raw.(FunctionStructure)
-	startMain := fsMain.StartQuad
-
-	// Actualizar el cuadruplo GOTO con la dirección de inicio de main
-	if quadIndex < 0 || quadIndex >= len(Quads) {
-		return fmt.Errorf("error: índice de cuadruplo GOTO a main (%d) fuera de rango", quadIndex)
-	}
-	Quads[quadIndex].Result = startMain
-
 	return nil
 }
 
@@ -504,39 +491,18 @@ func HandleCycleExpression() error {
 	return nil
 }
 
-func HandleFunction(funcInfo interface{}) error {
-	info, ok := funcInfo.(FuncInfo)
-	if !ok {
-		return fmt.Errorf("error interno: información de función inválida")
-	}
+// -------------------------------------------- PRINT --------------------------------------------
 
-	// Obtener el conteo actual de temporales
-	tempCount := TempVar
+func HandlePrintExpression() error {
+	value, _ := PilaO.Pop()
+	PushQuad("PRINT", value, "_", "_")
+	return nil
+}
 
-	// Obtener la entrada de la función
-	raw, exists := FunctionDirectory.Get(info.Name)
-	if !exists {
-		return fmt.Errorf("error: función '%s' no encontrada en el directorio", info.Name)
-	}
-
-	// Verificar y convertir el tipo
-	fs, ok := raw.(FunctionStructure)
-	if !ok {
-		return fmt.Errorf("error interno: entrada para '%s' no es FunctionStructure", info.Name)
-	}
-
-	// Actualizar el conteo de temporales
-	fs.TempCount = tempCount
-	FunctionDirectory.Put(info.Name, fs)
-
-	// Reiniciar contador para la siguiente función
-	TempVar = 0
-
-	// Generar ENDFUNC
-	PushQuad("ENDFUNC", "_", "_", "_")
-
-	// Salir del scope local
-	Scopes.ExitScope()
-
+func HandlePrintString(strToken interface{}) error {
+	tok := strToken.(*token.Token)
+	str := string(tok.Lit)
+	addr := GetConstAddress(str, "string")
+	PushQuad("PRINT", addr, "_", "_")
 	return nil
 }

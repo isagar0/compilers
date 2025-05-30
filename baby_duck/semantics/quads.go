@@ -206,6 +206,11 @@ func PrintQuads() {
 	}
 }
 
+// GetCurrentQuad: Obtiene el índice del último cuadruplo generado
+func GetCurrentQuad() int {
+	return len(Quads) - 1
+}
+
 // ResetStacks: Limpia todas las variables de los quads
 func ResetStacks() {
 	PilaO = NewStack()
