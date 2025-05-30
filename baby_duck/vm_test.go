@@ -18,7 +18,6 @@ var testDataAccept4 = []*TI4{
 		 var n, result: int;
 
 		 void factorial(x: int) [
-			var temp: int;
 			{
 				if (x < 1) {
 					if (x > -1) {
@@ -32,36 +31,38 @@ var testDataAccept4 = []*TI4{
 			}
 		 ];
 
-		 void printFactorial() [{
-			print("El factorial es:", result, "Hola");
+		 void printF() [{
+			print("El factorial es:", result);
 		 }];
 
 		 main {
 			n = 5;
 			result = 1;
 			factorial(n);
-			printFactorial();
+			printF();
 		 }
 
 		 end`,
 	},
 	{
-		`program testFibonacci;
+		`program While;
 		 var n, resultado: int;
 
-		 void fibonacciIter(num: int)
+		 void fibonacci(num: int)
 		 [
 			var a, b, i, temp: int;
 			{
 				a = 0;
 				b = 1;
 				i = 0;
+				
 				while (i < num) do {
 					temp = b;
 					b = a + b;
 					a = temp;
 					i = i + 1;
 				};
+				
 				resultado = a;
 			}
 		 ];
@@ -69,8 +70,8 @@ var testDataAccept4 = []*TI4{
 		 main {
 			n = 10;
 			resultado = 0;
-			fibonacciIter(n);
-			print("Fibonacci de", n, "es", resultado);
+			fibonacci(n);
+			print("Fibonacci de", n, "es: ", resultado);
 		 }
 	 	 end`,
 	},
